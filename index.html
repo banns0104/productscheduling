@@ -1769,7 +1769,7 @@
       <div class="login-logo">AboutFishing</div>
       <div class="login-subtitle">Project Scheduling Dashboard</div>
       <div class="login-divider"><span>@aboutfishing.kr 계정으로 로그인</span></div>
-      <button class="login-btn" id="googleLoginBtn">
+      <button class="login-btn" id="googleLoginBtn" onclick="loginWithGoogle()">
         <svg width="20" height="20" viewBox="0 0 48 48">
           <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -2272,11 +2272,25 @@
     }
 
     function loginWithGoogle() {
+      var btn = document.getElementById('googleLoginBtn');
       if (!_fb.auth) {
-        showLoginError('Firebase 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+        // Firebase 아직 로딩 중 - 버튼 로딩 상태로 바꾸고 대기 후 자동 재시도
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = '연결 중...'; }
+        var waitCount = 0;
+        var waitInterval = setInterval(function() {
+          waitCount++;
+          if (_fb.auth) {
+            clearInterval(waitInterval);
+            if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+            loginWithGoogle();
+          } else if (waitCount > 10) {
+            clearInterval(waitInterval);
+            if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Google 계정으로 로그인'; }
+            showLoginError('Firebase 연결에 실패했습니다. 네트워크 확인 후 새로고침 해주세요.');
+          }
+        }, 500);
         return;
       }
-      var btn = document.getElementById('googleLoginBtn');
       if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = '로그인 중...'; }
       var provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
