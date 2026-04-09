@@ -1890,7 +1890,7 @@
           <select id="projectSortSelect" onchange="sortProjects(this.value)" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;background:white;cursor:pointer;">
             <option value="tier">티어순</option>
             <option value="name">이름순</option>
-            <option value="deadline">일정 임박순</option>
+            <option value="deadline" selected>일정 임박순</option>
             <option value="score">점수순</option>
             <option value="status">상태순</option>
             <option value="deploy">배포일순</option>
@@ -1933,7 +1933,7 @@
         <div style="padding: 20px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
             <h3 style="font-size:18px;font-weight:700;">변경 이력</h3>
-            <button class="btn-secondary btn" onclick="clearHistory()" style="font-size:12px;">이력 초기화</button>
+            <button class="btn-secondary btn" onclick="clearHistory()" id="clearHistoryBtn" style="font-size:12px;display:none;">이력 초기화</button>
           </div>
           <div id="historyContent" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
@@ -3022,12 +3022,16 @@
           btn.textContent = '🔓';
           badge.style.display = 'inline-block';
           document.getElementById('memberMgmtBtn').style.display = 'inline-block';
+          var histBtn = document.getElementById('clearHistoryBtn');
+          if (histBtn) histBtn.style.display = 'inline-block';
           localStorage.setItem('af_adminMode', 'true');
           _showToast('관리자 모드 활성화');
         } else {
           btn.textContent = '🔒';
           badge.style.display = 'none';
           document.getElementById('memberMgmtBtn').style.display = 'none';
+          var histBtn = document.getElementById('clearHistoryBtn');
+          if (histBtn) histBtn.style.display = 'none';
           localStorage.removeItem('af_adminMode');
           _showToast('관리자 모드 비활성화');
         }
@@ -5138,7 +5142,13 @@
           // 2행: 날짜 + 배포일 + 채팅버튼
           const bottomLine = document.createElement('div');
           bottomLine.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%;font-size:10px;color:#9ca3af;';
-          bottomLine.innerHTML = '<span>' + startStr + ' ~ ' + endStr + '</span>' + (deployStr ? '<span style="color:#f97316;font-weight:600;" title="배포일">🚀' + deployStr + '</span>' : '');
+          var svcTagsHTML = '';
+          if (project.serviceTypes && project.serviceTypes.length > 0) {
+            project.serviceTypes.forEach(function(st) {
+              svcTagsHTML += '<span class="service-tag">' + st + '</span>';
+            });
+          }
+          bottomLine.innerHTML = svcTagsHTML + '<span>' + startStr + ' ~ ' + endStr + '</span>' + (deployStr ? '<span style="color:#f97316;font-weight:600;" title="배포일">🚀' + deployStr + '</span>' : '');
 
           // 채팅 버튼
           const chatBtn = document.createElement('button');
@@ -5355,6 +5365,13 @@
         if (state.filters.search && !p.name.includes(state.filters.search) && !p.id.includes(state.filters.search)) return false;
         if (state.filters.tier && p.tier !== state.filters.tier) return false;
         if (state.filters.status && p.status !== state.filters.status) return false;
+        if (state.filters.member) {
+          var hasMember = false;
+          ['plan','design','front','back','qa'].forEach(function(ph) {
+            if (p.assignments && p.assignments[ph] && p.assignments[ph].includes(state.filters.member)) hasMember = true;
+          });
+          if (!hasMember) return false;
+        }
         // 스케줄탭: 완료/Deprecated 프로젝트는 상태필터로 명시적으로 선택하지 않으면 숨김
         if (state.currentTab === 'schedule' && !state.filters.status) {
           if (p.status === '완료' || p.status === 'Deprecated') return false;
@@ -5650,6 +5667,20 @@
           </select>
         </div>
         <div class="detail-section">
+          <label class="detail-label">서비스 종류</label>
+          <div id="detailServiceTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;"></div>
+          <div style="display:flex;gap:4px;">
+            <select class="detail-input" id="detailServiceSelect" style="flex:1;font-size:12px;">
+              <option value="">서비스 선택...</option>
+            </select>
+            <button onclick="addServiceTag()" class="btn btn-secondary" style="font-size:11px;padding:4px 8px;flex-shrink:0;">추가</button>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:4px;">
+            <input type="text" class="detail-input" id="detailServiceCustom" placeholder="새 서비스 종류 입력..." style="flex:1;font-size:12px;">
+            <button onclick="addCustomServiceType()" class="btn btn-secondary" style="font-size:11px;padding:4px 8px;flex-shrink:0;">직접 추가</button>
+          </div>
+        </div>
+        <div class="detail-section">
           <label class="detail-label">메모 / 코멘트</label>
           <textarea class="detail-input" id="detailMemo" style="height: 80px;" placeholder="팀 메모, 이슈, 변경사항 등...">${p.memo || ''}</textarea>
         </div>
@@ -5690,6 +5721,7 @@
 
       panel.classList.add('open');
       document.getElementById('panelBackdrop').classList.add('open');
+      setTimeout(renderDetailServiceTags, 50);
       // Bind link type change for custom input toggle
       document.querySelectorAll('.link-type-select').forEach(sel => {
         sel.addEventListener('change', function() {
@@ -5745,6 +5777,7 @@
         }
       });
       pushHistory('edit', state.selectedProject.id, '링크', null, state.selectedProject.links.length + '개');
+      // Save service types (already updated via addServiceTag/removeServiceTag)
       saveProjects();
       _showToast('저장되었습니다');
       renderGantt();
@@ -5786,6 +5819,125 @@
       });
       state.selectedProject.links.splice(idx, 1);
       openDetailPanel(state.selectedProject.id);
+    }
+
+    function _getServiceTypes() {
+      var saved = localStorage.getItem('af_service_types');
+      if (saved) { try { var arr = JSON.parse(saved); if (arr.length) return arr; } catch(e){} }
+      return SERVICE_TYPES.slice();
+    }
+    function _saveServiceTypes(arr) {
+      localStorage.setItem('af_service_types', JSON.stringify(arr));
+    }
+
+    function renderDetailServiceTags() {
+      var container = document.getElementById('detailServiceTags');
+      var select = document.getElementById('detailServiceSelect');
+      if (!container || !select || !state.selectedProject) return;
+      var tags = state.selectedProject.serviceTypes || [];
+      container.innerHTML = '';
+      tags.forEach(function(tag, idx) {
+        var el = document.createElement('span');
+        el.className = 'service-tag';
+        el.style.cssText = 'display:inline-flex;align-items:center;gap:3px;padding:3px 6px;cursor:default;';
+        el.innerHTML = tag + '<span onclick="removeServiceTag(' + idx + ')" style="cursor:pointer;color:#ef4444;font-size:12px;margin-left:2px;">×</span>';
+        container.appendChild(el);
+      });
+      // Populate select with types not already added
+      var allTypes = _getServiceTypes();
+      select.innerHTML = '<option value="">서비스 선택...</option>';
+      allTypes.forEach(function(t) {
+        if (!tags.includes(t)) {
+          var opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = t;
+          select.appendChild(opt);
+        }
+      });
+    }
+
+    function addServiceTag() {
+      if (!state.selectedProject) return;
+      var sel = document.getElementById('detailServiceSelect');
+      var val = sel.value;
+      if (!val) return;
+      if (!state.selectedProject.serviceTypes) state.selectedProject.serviceTypes = [];
+      if (!state.selectedProject.serviceTypes.includes(val)) {
+        state.selectedProject.serviceTypes.push(val);
+      }
+      renderDetailServiceTags();
+    }
+
+    function removeServiceTag(idx) {
+      if (!state.selectedProject || !state.selectedProject.serviceTypes) return;
+      state.selectedProject.serviceTypes.splice(idx, 1);
+      renderDetailServiceTags();
+    }
+
+    function addCustomServiceType() {
+      var input = document.getElementById('detailServiceCustom');
+      var val = input.value.trim();
+      if (!val) return;
+      var allTypes = _getServiceTypes();
+      if (!allTypes.includes(val)) {
+        allTypes.push(val);
+        _saveServiceTypes(allTypes);
+      }
+      if (!state.selectedProject.serviceTypes) state.selectedProject.serviceTypes = [];
+      if (!state.selectedProject.serviceTypes.includes(val)) {
+        state.selectedProject.serviceTypes.push(val);
+      }
+      input.value = '';
+      renderDetailServiceTags();
+    }
+
+    function renderCreateServiceTags() {
+      var container = document.getElementById('createServiceTags');
+      var select = document.getElementById('createServiceSelect');
+      if (!container || !select || !state.selectedProject) return;
+      var tags = state.selectedProject.serviceTypes || [];
+      container.innerHTML = '';
+      tags.forEach(function(tag, idx) {
+        var el = document.createElement('span');
+        el.className = 'service-tag';
+        el.style.cssText = 'display:inline-flex;align-items:center;gap:3px;padding:3px 6px;cursor:default;';
+        el.innerHTML = tag + '<span onclick="removeCreateServiceTag(' + idx + ')" style="cursor:pointer;color:#ef4444;font-size:12px;margin-left:2px;">×</span>';
+        container.appendChild(el);
+      });
+      var allTypes = _getServiceTypes();
+      select.innerHTML = '<option value="">서비스 선택...</option>';
+      allTypes.forEach(function(t) {
+        if (!tags.includes(t)) {
+          var opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = t;
+          select.appendChild(opt);
+        }
+      });
+    }
+    function addCreateServiceTag() {
+      if (!state.selectedProject) return;
+      var sel = document.getElementById('createServiceSelect');
+      if (!sel.value) return;
+      if (!state.selectedProject.serviceTypes) state.selectedProject.serviceTypes = [];
+      if (!state.selectedProject.serviceTypes.includes(sel.value)) state.selectedProject.serviceTypes.push(sel.value);
+      renderCreateServiceTags();
+    }
+    function removeCreateServiceTag(idx) {
+      if (!state.selectedProject || !state.selectedProject.serviceTypes) return;
+      state.selectedProject.serviceTypes.splice(idx, 1);
+      renderCreateServiceTags();
+    }
+    function addCreateCustomServiceType() {
+      var input = document.getElementById('createServiceCustom');
+      var val = input.value.trim();
+      if (!val) return;
+      var allTypes = _getServiceTypes();
+      if (!allTypes.includes(val)) { allTypes.push(val); _saveServiceTypes(allTypes); }
+      if (!state.selectedProject.serviceTypes) state.selectedProject.serviceTypes = [];
+      if (!state.selectedProject.serviceTypes.includes(val)) state.selectedProject.serviceTypes.push(val);
+      input.value = '';
+      renderCreateServiceTags();
     }
 
     function deleteProject() {
@@ -5954,7 +6106,7 @@
     }
 
     // 프로젝트 정렬 상태
-    let _projectSortKey = 'tier';
+    let _projectSortKey = 'deadline';
     function sortProjects(key) {
       _projectSortKey = key;
       renderProjects();
@@ -6012,7 +6164,7 @@
           <tr>
             <td>${idx + 1}</td>
             <td><span class="tier-badge tier-${p.tier}">${p.tier === 'CONTINUOUS' ? '지속' : p.tier}</span></td>
-            <td><span class="project-name-link" onclick="openDetailPanel('${p.id}')">${p.name}</span></td>
+            <td><span class="project-name-link" onclick="openDetailPanel('${p.id}')">${p.name}</span>${(p.serviceTypes||[]).map(function(st){return '<span class="service-tag" style="margin-left:4px;">'+st+'</span>';}).join('')}</td>
             <td class="phase-cell" onclick="openEditModal('${p.id}','plan')">${renderPhaseCell(p, 'plan')}</td>
             <td class="phase-cell" onclick="openEditModal('${p.id}','design')">${renderPhaseCell(p, 'design')}</td>
             <td class="phase-cell" onclick="openEditModal('${p.id}','front')">${renderPhaseCell(p, 'front')}</td>
@@ -6387,8 +6539,59 @@
           </select>
         </div>
         <div class="detail-section">
+          <label class="detail-label">서비스 종류</label>
+          <div id="createServiceTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;"></div>
+          <div style="display:flex;gap:4px;">
+            <select class="detail-input" id="createServiceSelect" style="flex:1;font-size:12px;">
+              <option value="">서비스 선택...</option>
+            </select>
+            <button onclick="addCreateServiceTag()" class="btn btn-secondary" style="font-size:11px;padding:4px 8px;flex-shrink:0;">추가</button>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:4px;">
+            <input type="text" class="detail-input" id="createServiceCustom" placeholder="새 서비스 종류 입력..." style="flex:1;font-size:12px;">
+            <button onclick="addCreateCustomServiceType()" class="btn btn-secondary" style="font-size:11px;padding:4px 8px;flex-shrink:0;">직접 추가</button>
+          </div>
+        </div>
+        <div class="detail-section">
           <label class="detail-label">근거</label>
           <textarea class="detail-input" id="detailRationale" style="height: 60px;" placeholder="우선순위 근거..."></textarea>
+        </div>
+        <div style="margin-top: 16px; padding: 16px; border-top: 1px solid #e5e7eb; background: #f9fafb; border-radius: 8px;">
+          <label class="detail-label" style="margin-bottom: 12px; font-weight: 700; font-size: 13px;">우선순위 점수</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-size:12px;color:#374151;">사업 영향도</span>
+                <span style="font-size:12px;font-weight:700;color:#2563eb;" id="createImpactVal">5</span>
+              </div>
+              <input type="range" min="1" max="10" value="5" id="createImpact" oninput="document.getElementById('createImpactVal').textContent=this.value;_recalcCreateScore()" style="width:100%;accent-color:#2563eb;">
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-size:12px;color:#374151;">긴급도</span>
+                <span style="font-size:12px;font-weight:700;color:#f59e0b;" id="createUrgencyVal">5</span>
+              </div>
+              <input type="range" min="1" max="10" value="5" id="createUrgency" oninput="document.getElementById('createUrgencyVal').textContent=this.value;_recalcCreateScore()" style="width:100%;accent-color:#f59e0b;">
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-size:12px;color:#374151;">복잡도</span>
+                <span style="font-size:12px;font-weight:700;color:#ef4444;" id="createComplexityVal">3</span>
+              </div>
+              <input type="range" min="1" max="10" value="3" id="createComplexity" oninput="document.getElementById('createComplexityVal').textContent=this.value;_recalcCreateScore()" style="width:100%;accent-color:#ef4444;">
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-size:12px;color:#374151;">의존도</span>
+                <span style="font-size:12px;font-weight:700;color:#8b5cf6;" id="createDependencyVal">0</span>
+              </div>
+              <input type="range" min="0" max="10" value="0" id="createDependency" oninput="document.getElementById('createDependencyVal').textContent=this.value;_recalcCreateScore()" style="width:100%;accent-color:#8b5cf6;">
+            </div>
+          </div>
+          <div style="margin-top:12px;text-align:center;padding:8px;background:white;border-radius:6px;border:1px solid #e5e7eb;">
+            <span style="font-size:11px;color:#6b7280;">종합 점수</span>
+            <span style="font-size:20px;font-weight:800;color:#1f2937;margin-left:8px;" id="createScoreDisplay">3.3</span>
+          </div>
         </div>
         <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
           <label class="detail-label" style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
@@ -6426,7 +6629,17 @@
       document.getElementById('panelBackdrop').classList.add('open');
 
       // Focus name field after panel opens
+      setTimeout(renderCreateServiceTags, 50);
       setTimeout(() => { const el = document.getElementById('detailName'); if (el) el.focus(); }, 350);
+    }
+
+    function _recalcCreateScore() {
+      var impact = parseInt(document.getElementById('createImpact').value) || 0;
+      var urgency = parseInt(document.getElementById('createUrgency').value) || 0;
+      var complexity = parseInt(document.getElementById('createComplexity').value) || 0;
+      var dependency = parseInt(document.getElementById('createDependency').value) || 0;
+      var score = Math.round(((impact + urgency + dependency) / 3 - complexity * 0.1) * 10) / 10;
+      document.getElementById('createScoreDisplay').textContent = score;
     }
 
     function saveNewProject() {
@@ -6440,6 +6653,14 @@
       state.selectedProject.deployDate = document.getElementById('detailDeployDate').value;
       state.selectedProject.status = document.getElementById('detailStatus').value;
       state.selectedProject.rationale = document.getElementById('detailRationale').value;
+      // 점수 저장
+      state.selectedProject.impact = parseInt(document.getElementById('createImpact').value) || 5;
+      state.selectedProject.urgency = parseInt(document.getElementById('createUrgency').value) || 5;
+      state.selectedProject.complexity = parseInt(document.getElementById('createComplexity').value) || 3;
+      state.selectedProject.dependency = parseInt(document.getElementById('createDependency').value) || 0;
+      var score = Math.round(((state.selectedProject.impact + state.selectedProject.urgency + state.selectedProject.dependency) / 3 - state.selectedProject.complexity * 0.1) * 10) / 10;
+      state.selectedProject.score = score;
+      state.selectedProject.bizScore = score;
       // Save links
       const linkTypes = document.querySelectorAll('.link-type-select');
       const linkUrls = document.querySelectorAll('.link-url-input');
@@ -6478,6 +6699,8 @@
         document.getElementById('adminToggle').textContent = '🔓';
         document.getElementById('adminBadge').style.display = 'inline-block';
         document.getElementById('memberMgmtBtn').style.display = 'inline-block';
+        var histBtn = document.getElementById('clearHistoryBtn');
+        if (histBtn) histBtn.style.display = 'inline-block';
       }
       // Restore saved team
       const savedTeam = localStorage.getItem('af_team');
@@ -6549,6 +6772,21 @@
         else if (state.currentTab === 'projects') renderProjects();
       };
 
+      // Member filter
+      var mf = document.getElementById('memberFilter');
+      mf.innerHTML = '<option value="">전체 멤버</option>';
+      TEAM.forEach(function(m) {
+        var opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name + ' (' + m.role + ')';
+        mf.appendChild(opt);
+      });
+      mf.onchange = function(e) {
+        state.filters.member = e.target.value;
+        if (state.currentTab === 'schedule') renderGantt();
+        else if (state.currentTab === 'projects') renderProjects();
+      };
+
       // Sync scroll between header and bars (horizontal)
       const ganttScroll = document.getElementById('ganttScroll');
       const ganttHeader = document.querySelector('.gantt-header');
@@ -6568,6 +6806,17 @@
         if ((e.ctrlKey || e.metaKey) && e.key === 'e') { e.preventDefault(); exportCSV(); return; }
         // ESC
         if (e.key === 'Escape') {
+          // 채팅 패널이 열려있으면 먼저 닫기 (방 내부면 방 리스트로, 아니면 패널 닫기)
+          var chatPanel = document.getElementById('chatPanel');
+          if (chatPanel && chatPanel.classList.contains('open')) {
+            var roomView = document.getElementById('projectRoomView');
+            if (roomView && roomView.style.display === 'flex' && state.currentChatTab === 'project') {
+              backToRoomList();
+            } else {
+              toggleChatPanel();
+            }
+            return;
+          }
           const inlinePopup = document.getElementById('inlineSchedulePopup');
           if (inlinePopup && inlinePopup.style.display !== 'none') {
             closeInlineSchedule();
@@ -6644,6 +6893,15 @@
     window.sortProjects = sortProjects;
     window.enterRoom = enterRoom;
     window.backToRoomList = backToRoomList;
+    window._recalcCreateScore = _recalcCreateScore;
+    window.addServiceTag = addServiceTag;
+    window.removeServiceTag = removeServiceTag;
+    window.addCustomServiceType = addCustomServiceType;
+    window.addCreateServiceTag = addCreateServiceTag;
+    window.removeCreateServiceTag = removeCreateServiceTag;
+    window.addCreateCustomServiceType = addCreateCustomServiceType;
+    window.renderDetailServiceTags = renderDetailServiceTags;
+    window.renderCreateServiceTags = renderCreateServiceTags;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
