@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AboutFishing 스케줄 대시보드 v7</title>
+  <title>AboutFishing 스케줄 대시보드 v8</title>
   <!-- No external dependencies -->
   <style>
     * {
@@ -977,6 +977,352 @@
       background: #9ca3af;
     }
 
+    .service-tag {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 5px;
+      border-radius: 3px;
+      margin-right: 3px;
+      background: #f3f4f6;
+      color: #374151;
+      white-space: nowrap;
+    }
+
+    .admin-mode-active .detail-body {
+      border: 2px dashed #dc2626;
+    }
+
+    .modal-history {
+      font-size: 12px;
+      line-height: 1.6;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #f9fafb;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+
+    .history-item {
+      padding: 6px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    /* ========== LOGIN SCREEN ========== */
+    .login-overlay {
+      display: flex;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .login-overlay.hidden {
+      display: none;
+    }
+
+    .login-card {
+      background: white;
+      border-radius: 12px;
+      padding: 48px 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .login-logo {
+      font-size: 28px;
+      font-weight: 700;
+      color: #6366f1;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 32px;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .login-btn:hover {
+      background: #4f46e5;
+    }
+
+    .login-error {
+      color: #dc2626;
+      font-size: 13px;
+      margin-top: 16px;
+      padding: 12px;
+      background: #fee2e2;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .login-error.show {
+      display: block;
+    }
+
+    /* ========== CHAT PANEL ========== */
+    .chat-panel {
+      position: fixed;
+      right: -380px;
+      top: 0;
+      width: 380px;
+      height: 100vh;
+      background: white;
+      border-left: 1px solid #e5e7eb;
+      z-index: 48;
+      transition: right 0.3s ease;
+      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-panel.open {
+      right: 0;
+    }
+
+    .chat-header {
+      padding: 16px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f9fafb;
+      flex-shrink: 0;
+    }
+
+    .chat-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .chat-tab {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 13px;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .chat-tab.active {
+      color: #1f2937;
+      border-bottom-color: #6366f1;
+    }
+
+    .chat-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-tab-pane {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-tab-pane.active {
+      display: flex;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-message {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .chat-message.own {
+      justify-content: flex-end;
+    }
+
+    .chat-message.own .chat-bubble {
+      background: #6366f1;
+      color: white;
+      border-radius: 12px 12px 2px 12px;
+    }
+
+    .chat-message .chat-bubble {
+      background: #f3f4f6;
+      color: #1f2937;
+      border-radius: 12px 12px 12px 2px;
+      padding: 10px 12px;
+      max-width: 70%;
+      word-wrap: break-word;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .chat-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #6366f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .chat-message.own .chat-avatar {
+      order: 2;
+    }
+
+    .chat-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 12px;
+    }
+
+    .chat-sender {
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    .chat-time {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .chat-input-area {
+      padding: 16px;
+      border-top: 1px solid #e5e7eb;
+      background: white;
+      flex-shrink: 0;
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    .chat-send-btn {
+      padding: 8px 12px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+
+    .chat-send-btn:hover {
+      background: #4f46e5;
+    }
+
+    .chat-disabled {
+      padding: 16px;
+      color: #6b7280;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .chat-project-selector {
+      padding: 12px;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .chat-project-selector select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .user-header-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .user-avatar-small {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #6366f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .user-avatar-small img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .user-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+
     /* ========== RESPONSIVE ========== */
 
     /* 태블릿 (768px 이하) */
@@ -1186,6 +1532,23 @@
   </style>
 </head>
 <body>
+  <!-- Login Overlay -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-logo">AboutFishing</div>
+      <div class="login-subtitle">스케줄 대시보드</div>
+      <button class="login-btn" id="googleLoginBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 6v6m0 0v6"></path>
+          <path d="M6 12h6m0 0h6"></path>
+        </svg>
+        구글 계정으로 로그인
+      </button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+  </div>
+
   <div class="container">
     <!-- Header -->
     <div class="header">
@@ -1208,12 +1571,25 @@
               <option value="대기">대기</option>
               <option value="진행">진행</option>
               <option value="완료">완료</option>
+              <option value="연기">연기</option>
+              <option value="Deprecated">Deprecated</option>
             </select>
             <select id="memberFilter">
               <option value="">전체 멤버</option>
             </select>
           </div>
-        </div>
+          <button class="btn btn-secondary" id="chatToggleBtn" title="채팅" onclick="toggleChatPanel()" style="font-size:16px;padding:6px 10px;display:none;">💬</button>
+          <div class="user-header-info" id="userHeaderInfo" style="display:none;">
+            <div class="user-avatar-small" id="userAvatarSmall"></div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <div class="user-name" id="userNameDisplay"></div>
+              <button class="btn btn-secondary" id="logoutBtn" onclick="logoutUser()" style="font-size:11px;padding:2px 6px;">로그아웃</button>
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="adminToggle" title="Admin Mode" onclick="toggleAdminMode()" style="font-size:16px;padding:6px 10px;">🔒</button>
+        <span id="adminBadge" style="display:none;background:#dc2626;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-left:8px;">ADMIN</span>
+        <button class="btn btn-secondary" id="memberMgmtBtn" onclick="openMemberManagement()" style="display:none;font-size:12px;padding:6px 10px;">팀원 관리</button>
+      </div>
       </div>
 
       <!-- Tabs -->
@@ -1222,6 +1598,7 @@
         <button class="tab" data-tab="projects">프로젝트</button>
         <button class="tab" data-tab="team">팀</button>
         <button class="tab" data-tab="overview">개요</button>
+        <button class="tab" data-tab="history">이력</button>
       </div>
     </div>
 
@@ -1303,6 +1680,56 @@
       <div class="tab-content" id="overview">
         <div class="overview-grid" id="overviewContent"></div>
       </div>
+      <!-- Tab 5: History -->
+      <div class="tab-content" id="history">
+        <div style="padding: 20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;">변경 이력</h3>
+            <button class="btn-secondary btn" onclick="clearHistory()" style="font-size:12px;">이력 초기화</button>
+          </div>
+          <div id="historyContent" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Panel -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-weight:700;font-size:14px;">채팅</div>
+        <button onclick="toggleChatPanel()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;">×</button>
+      </div>
+    </div>
+    <div class="chat-tabs">
+      <button class="chat-tab active" onclick="switchChatTab('global')">전체 채팅</button>
+      <button class="chat-tab" onclick="switchChatTab('project')">프로젝트 채팅</button>
+    </div>
+    <div class="chat-content">
+      <!-- Global Chat Tab -->
+      <div class="chat-tab-pane active" id="globalChatTab">
+        <div class="chat-messages" id="globalChatMessages"></div>
+        <div class="chat-input-area" id="globalChatInput" style="display:none;">
+          <input type="text" class="chat-input" id="globalChatText" placeholder="메시지 입력..." onkeypress="if(event.key==='Enter') sendChatMessage('global')">
+          <button class="chat-send-btn" onclick="sendChatMessage('global')">전송</button>
+        </div>
+        <div class="chat-disabled" id="globalChatDisabled" style="display:none;">로그인 후 이용 가능합니다</div>
+      </div>
+      <!-- Project Chat Tab -->
+      <div class="chat-tab-pane" id="projectChatTab">
+        <div class="chat-project-selector">
+          <select id="projectChatSelect" onchange="switchProject(this.value)" style="display:none;">
+            <option value="">프로젝트 선택...</option>
+          </select>
+          <div id="projectSelectDisabled" style="display:none;color:#6b7280;font-size:12px;">프로젝트를 선택하세요</div>
+        </div>
+        <div class="chat-messages" id="projectChatMessages"></div>
+        <div class="chat-input-area" id="projectChatInput" style="display:none;">
+          <input type="text" class="chat-input" id="projectChatText" placeholder="메시지 입력..." onkeypress="if(event.key==='Enter') sendChatMessage('project')">
+          <button class="chat-send-btn" onclick="sendChatMessage('project')">전송</button>
+        </div>
+        <div class="chat-disabled" id="projectChatDisabled" style="display:none;">로그인 후 이용 가능합니다</div>
+      </div>
     </div>
   </div>
 
@@ -1373,19 +1800,40 @@
     /* ========== CONSTANTS ========== */
     const TODAY = new Date(2026, 3, 8); // April 8, 2026
     const GANTT_START = new Date(2026, 0, 1); // January 1
-    const GANTT_END = new Date(2027, 1, 28); // February 28, 2027
-    const TOTAL_DAYS = Math.ceil((GANTT_END - GANTT_START) / 86400000);
+    let GANTT_END = new Date(2028, 11, 31); // February 28, 2027
+    let TOTAL_DAYS = Math.ceil((GANTT_END - GANTT_START) / 86400000);
     const DAY_WIDTH = 20; // pixels per day at zoom=1 (엑셀 스타일 일자 표시)
+
+    function recalcGanttRange() {
+      // Find latest end date across all projects
+      let maxDate = new Date(2027, 11, 31); // Minimum: Dec 31, 2027
+      state.projects.forEach(proj => {
+        ['plan', 'design', 'front', 'back', 'qa'].forEach(phase => {
+          if (proj.phases[phase] && proj.phases[phase].end) {
+            const phaseEnd = parseLocalDate(proj.phases[phase].end);
+            if (phaseEnd && phaseEnd > maxDate) maxDate = phaseEnd;
+          }
+        });
+        if (proj.deployDate) {
+          const deployDate = parseLocalDate(proj.deployDate);
+          if (deployDate && deployDate > maxDate) maxDate = deployDate;
+        }
+      });
+      // Add 3 months padding
+      GANTT_END = new Date(maxDate.getFullYear(), maxDate.getMonth() + 3, 0);
+      TOTAL_DAYS = Math.ceil((GANTT_END - GANTT_START) / 86400000);
+    }
 
     const TEAM = [
       { id: 'seo', name: '서현일', role: 'CPO', color: '#6366f1' },
-      { id: 'koo', name: '구자현', role: 'PM', color: '#8b5cf6' },
-      { id: 'kim_hc', name: '김현철', role: '디자인', color: '#a855f7' },
-      { id: 'jung', name: '정혁수', role: '프론트엔드', color: '#06b6d4' },
-      { id: 'shin', name: '신인재', role: '프론트엔드', color: '#0891b2' },
-      { id: 'choi', name: '최상수', role: '백엔드', color: '#10b981' },
-      { id: 'kang', name: '강상배', role: '백엔드', color: '#059669' },
-      { id: 'song', name: '송창석', role: '프론트엔드', color: '#0ea5e9' }
+      { id: 'koo', name: '구범모', role: 'PM', color: '#8b5cf6' },
+      { id: 'kim_hc', name: '김현철', role: 'CDO', color: '#a855f7' },
+      { id: 'jung', name: '정지섭', role: '웹 프론트엔드 파트장', color: '#06b6d4' },
+      { id: 'shin', name: '신진섭', role: '웹/앱 프론트엔드', color: '#0891b2' },
+      { id: 'choi', name: '최상수', role: '백엔드/인프라', color: '#10b981' },
+      { id: 'kang', name: '강상배', role: '백엔드/인프라', color: '#059669' },
+      { id: 'song', name: '송창석', role: '웹 프론트엔드', color: '#0ea5e9' },
+    { id: 'kim_cr', name: '김채린', role: 'QA', color: '#f43f5e' }
     ];
 
     const PHASE_COLORS = {
@@ -1411,6 +1859,16 @@
       qa: 'QA'
     };
 
+    const SERVICE_TYPES = ['고객앱', '선주모바일', '비즈페이지', '예약웹', '쇼핑웹', '어드민', '샵바이어드민', '포인트맵', '기타'];
+    
+    const STATUS_COLORS = {
+      '대기': '#9ca3af',
+      '진행': '#fbbf24',
+      '완료': '#22c55e',
+      '연기': '#60a5fa',
+      'Deprecated': '#6b7280'
+    };
+
     const TIER_COLORS = {
       CRITICAL: '#dc2626',
       TIER1: '#f59e0b',
@@ -1433,8 +1891,383 @@
         member: ''
       },
       selectedProject: null,
-      dragInfo: null
+      dragInfo: null,
+      adminMode: false,
+      history: [],
+      currentUser: null,
+      currentChatTab: 'global',
+      selectedProjectChat: null,
+      chatListeners: {}
     };
+
+    /* ========== AUTH & LOGIN ========== */
+    function _isLocalMode() {
+      const url = window.location.href;
+      return url.startsWith('http://localhost') || url.startsWith('file://');
+    }
+
+    function _initAuthCheck() {
+      // Check if running in local dev mode
+      if (_isLocalMode()) {
+        hideLoginScreen();
+        return;
+      }
+
+      if (!_fb.auth) {
+        // Firebase not loaded, check after delay
+        setTimeout(_initAuthCheck, 1000);
+        return;
+      }
+
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+          // Check domain
+          if (user.email && user.email.endsWith('@aboutfishing.kr')) {
+            state.currentUser = {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName || user.email.split('@')[0],
+              photoURL: user.photoURL
+            };
+            updateUserHeader();
+            hideLoginScreen();
+            initChatSystem();
+          } else {
+            // Invalid domain
+            firebase.auth().signOut();
+            showLoginError('aboutfishing.kr 계정만 접근 가능합니다');
+          }
+        } else {
+          showLoginScreen();
+        }
+      });
+    }
+
+    function showLoginScreen() {
+      document.getElementById('loginOverlay').classList.remove('hidden');
+      document.getElementById('googleLoginBtn').onclick = loginWithGoogle;
+    }
+
+    function hideLoginScreen() {
+      document.getElementById('loginOverlay').classList.add('hidden');
+    }
+
+    function showLoginError(msg) {
+      const errorEl = document.getElementById('loginError');
+      errorEl.textContent = msg;
+      errorEl.classList.add('show');
+      setTimeout(() => {
+        errorEl.classList.remove('show');
+      }, 5000);
+    }
+
+    function loginWithGoogle() {
+      if (!_fb.auth) {
+        showLoginError('Firebase 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+      const provider = new firebase.auth.GoogleAuthProvider();
+      firebase.auth().signInWithPopup(provider)
+        .catch(function(error) {
+          showLoginError('로그인 실패: ' + error.message);
+        });
+    }
+
+    function logoutUser() {
+      if (!_fb.auth) return;
+      firebase.auth().signOut().then(function() {
+        state.currentUser = null;
+        showLoginScreen();
+        updateUserHeader();
+      });
+    }
+
+    function updateUserHeader() {
+      const headerInfo = document.getElementById('userHeaderInfo');
+      const chatBtn = document.getElementById('chatToggleBtn');
+      const avatarEl = document.getElementById('userAvatarSmall');
+      const nameEl = document.getElementById('userNameDisplay');
+
+      if (state.currentUser) {
+        headerInfo.style.display = 'flex';
+        chatBtn.style.display = 'inline-block';
+        nameEl.textContent = state.currentUser.displayName;
+        if (state.currentUser.photoURL) {
+          avatarEl.innerHTML = '<img src="' + state.currentUser.photoURL + '">';
+        } else {
+          avatarEl.textContent = state.currentUser.displayName.charAt(0);
+        }
+      } else {
+        headerInfo.style.display = 'none';
+        chatBtn.style.display = 'none';
+      }
+    }
+
+    /* ========== CHAT SYSTEM ========== */
+    function initChatSystem() {
+      if (!state.currentUser || !_fb.db) return;
+      populateChatProjectSelector();
+      loadGlobalChatMessages();
+      updateChatInputVisibility();
+    }
+
+    function populateChatProjectSelector() {
+      const select = document.getElementById('projectChatSelect');
+      select.innerHTML = '<option value="">프로젝트 선택...</option>';
+      state.projects.forEach(proj => {
+        const opt = document.createElement('option');
+        opt.value = proj.id;
+        opt.textContent = proj.name;
+        select.appendChild(opt);
+      });
+    }
+
+    function switchChatTab(tab) {
+      state.currentChatTab = tab;
+      document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.chat-tab-pane').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      if (tab === 'global') {
+        document.getElementById('globalChatTab').classList.add('active');
+        loadGlobalChatMessages();
+      } else {
+        document.getElementById('projectChatTab').classList.add('active');
+        if (state.selectedProjectChat) {
+          loadProjectChatMessages(state.selectedProjectChat);
+        }
+      }
+    }
+
+    function switchProject(projId) {
+      state.selectedProjectChat = projId;
+      if (projId) {
+        loadProjectChatMessages(projId);
+      }
+    }
+
+    function toggleChatPanel() {
+      document.getElementById('chatPanel').classList.toggle('open');
+    }
+
+    // Chat pagination state
+    const _chatPage = { globalOldest: null, projectOldest: null, globalLoading: false, projectLoading: false };
+    const CHAT_PAGE_SIZE = 50;
+
+    function loadGlobalChatMessages() {
+      if (!_fb.db || !state.currentUser) {
+        document.getElementById('globalChatDisabled').style.display = 'block';
+        document.getElementById('globalChatInput').style.display = 'none';
+        return;
+      }
+      document.getElementById('globalChatDisabled').style.display = 'none';
+      document.getElementById('globalChatInput').style.display = 'flex';
+
+      if (state.chatListeners['global']) state.chatListeners['global']();
+
+      const messagesEl = document.getElementById('globalChatMessages');
+      messagesEl.innerHTML = '';
+      _chatPage.globalOldest = null;
+
+      // Load initial batch
+      const initRef = _fb.db.ref('chats/global').orderByChild('timestamp').limitToLast(CHAT_PAGE_SIZE);
+      initRef.once('value', function(snapshot) {
+        const msgs = [];
+        snapshot.forEach(function(child) { msgs.push({ key: child.key, ...child.val() }); });
+        if (msgs.length > 0) _chatPage.globalOldest = msgs[0].timestamp;
+        msgs.forEach(function(msg) { appendChatMessage(msg, 'globalChatMessages'); });
+      });
+
+      // Live listener for NEW messages only
+      const liveRef = _fb.db.ref('chats/global').orderByChild('timestamp').startAt(Date.now());
+      const listener = liveRef.on('child_added', function(snap) {
+        const msg = snap.val();
+        if (msg) appendChatMessage(msg, 'globalChatMessages');
+      });
+      state.chatListeners['global'] = function() { liveRef.off('child_added', listener); };
+
+      // Scroll-up to load older messages
+      messagesEl.onscroll = function() {
+        if (messagesEl.scrollTop < 40 && !_chatPage.globalLoading && _chatPage.globalOldest) {
+          _chatPage.globalLoading = true;
+          const olderRef = _fb.db.ref('chats/global').orderByChild('timestamp').endAt(_chatPage.globalOldest - 1).limitToLast(CHAT_PAGE_SIZE);
+          olderRef.once('value', function(snapshot) {
+            const msgs = [];
+            snapshot.forEach(function(child) { msgs.push({ key: child.key, ...child.val() }); });
+            if (msgs.length > 0) {
+              _chatPage.globalOldest = msgs[0].timestamp;
+              const prevHeight = messagesEl.scrollHeight;
+              msgs.forEach(function(msg) { prependChatMessage(msg, 'globalChatMessages'); });
+              messagesEl.scrollTop = messagesEl.scrollHeight - prevHeight;
+            }
+            _chatPage.globalLoading = false;
+          });
+        }
+      };
+    }
+
+    function loadProjectChatMessages(projId) {
+      if (!_fb.db || !state.currentUser) {
+        document.getElementById('projectChatDisabled').style.display = 'block';
+        document.getElementById('projectChatInput').style.display = 'none';
+        return;
+      }
+      document.getElementById('projectChatDisabled').style.display = 'none';
+      document.getElementById('projectChatInput').style.display = 'flex';
+
+      if (state.chatListeners['project']) state.chatListeners['project']();
+
+      const messagesEl = document.getElementById('projectChatMessages');
+      messagesEl.innerHTML = '';
+      _chatPage.projectOldest = null;
+
+      const path = 'chats/project/' + projId;
+      const initRef = _fb.db.ref(path).orderByChild('timestamp').limitToLast(CHAT_PAGE_SIZE);
+      initRef.once('value', function(snapshot) {
+        const msgs = [];
+        snapshot.forEach(function(child) { msgs.push({ key: child.key, ...child.val() }); });
+        if (msgs.length > 0) _chatPage.projectOldest = msgs[0].timestamp;
+        msgs.forEach(function(msg) { appendChatMessage(msg, 'projectChatMessages'); });
+      });
+
+      const liveRef = _fb.db.ref(path).orderByChild('timestamp').startAt(Date.now());
+      const listener = liveRef.on('child_added', function(snap) {
+        const msg = snap.val();
+        if (msg) appendChatMessage(msg, 'projectChatMessages');
+      });
+      state.chatListeners['project'] = function() { liveRef.off('child_added', listener); };
+
+      messagesEl.onscroll = function() {
+        if (messagesEl.scrollTop < 40 && !_chatPage.projectLoading && _chatPage.projectOldest) {
+          _chatPage.projectLoading = true;
+          const olderRef = _fb.db.ref(path).orderByChild('timestamp').endAt(_chatPage.projectOldest - 1).limitToLast(CHAT_PAGE_SIZE);
+          olderRef.once('value', function(snapshot) {
+            const msgs = [];
+            snapshot.forEach(function(child) { msgs.push({ key: child.key, ...child.val() }); });
+            if (msgs.length > 0) {
+              _chatPage.projectOldest = msgs[0].timestamp;
+              const prevHeight = messagesEl.scrollHeight;
+              msgs.forEach(function(msg) { prependChatMessage(msg, 'projectChatMessages'); });
+              messagesEl.scrollTop = messagesEl.scrollHeight - prevHeight;
+            }
+            _chatPage.projectLoading = false;
+          });
+        }
+      };
+    }
+
+    function prependChatMessage(msg, containerId) {
+      const container = document.getElementById(containerId);
+      const isOwn = state.currentUser && msg.uid === state.currentUser.uid;
+      const msgEl = document.createElement('div');
+      msgEl.className = 'chat-message' + (isOwn ? ' own' : '');
+      const avatar = document.createElement('div');
+      avatar.className = 'chat-avatar';
+      avatar.style.background = '#6366f1';
+      if (msg.photoURL) {
+        avatar.innerHTML = '<img src="' + msg.photoURL + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+      } else {
+        avatar.textContent = (msg.displayName || '?').charAt(0);
+      }
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      bubble.textContent = msg.text;
+      const info = document.createElement('div');
+      info.className = 'chat-info';
+      const sender = document.createElement('div');
+      sender.className = 'chat-sender';
+      sender.textContent = msg.displayName || '';
+      const time = document.createElement('div');
+      time.className = 'chat-time';
+      const msgDate = new Date(msg.timestamp);
+      time.textContent = msgDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      info.appendChild(sender);
+      info.appendChild(time);
+      msgEl.appendChild(avatar);
+      msgEl.appendChild(info);
+      msgEl.appendChild(bubble);
+      container.insertBefore(msgEl, container.firstChild);
+    }
+
+    function appendChatMessage(msg, containerId) {
+      const container = document.getElementById(containerId);
+      const isOwn = msg.uid === state.currentUser.uid;
+
+      const msgEl = document.createElement('div');
+      msgEl.className = 'chat-message' + (isOwn ? ' own' : '');
+
+      const avatar = document.createElement('div');
+      avatar.className = 'chat-avatar';
+      avatar.style.background = '#6366f1';
+      if (msg.photoURL) {
+        avatar.innerHTML = '<img src="' + msg.photoURL + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+      } else {
+        avatar.textContent = msg.displayName.charAt(0);
+      }
+
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      bubble.textContent = msg.text;
+
+      const info = document.createElement('div');
+      info.className = 'chat-info';
+      const sender = document.createElement('div');
+      sender.className = 'chat-sender';
+      sender.textContent = msg.displayName;
+      const time = document.createElement('div');
+      time.className = 'chat-time';
+      const msgDate = new Date(msg.timestamp);
+      time.textContent = msgDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      info.appendChild(sender);
+      info.appendChild(time);
+
+      msgEl.appendChild(avatar);
+      msgEl.appendChild(info);
+      msgEl.appendChild(bubble);
+      container.appendChild(msgEl);
+
+      // Auto-scroll to bottom
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function sendChatMessage(type) {
+      if (!_fb.db || !state.currentUser) return;
+
+      const textInputId = type === 'global' ? 'globalChatText' : 'projectChatText';
+      const textEl = document.getElementById(textInputId);
+      const text = textEl.value.trim();
+      if (!text) return;
+
+      let path = 'chats/global';
+      if (type === 'project' && state.selectedProjectChat) {
+        path = 'chats/project/' + state.selectedProjectChat;
+      }
+
+      const msg = {
+        uid: state.currentUser.uid,
+        email: state.currentUser.email,
+        displayName: state.currentUser.displayName,
+        photoURL: state.currentUser.photoURL,
+        text: text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      };
+
+      _fb.db.ref(path).push(msg).then(function() {
+        textEl.value = '';
+      }).catch(function(err) {
+        console.error('Chat send error:', err);
+        _showToast('메시지 전송 실패');
+      });
+    }
+
+    function updateChatInputVisibility() {
+      const hasAuth = !!state.currentUser;
+      if (!hasAuth) {
+        document.getElementById('globalChatDisabled').style.display = 'block';
+        document.getElementById('globalChatInput').style.display = 'none';
+        document.getElementById('projectChatDisabled').style.display = 'block';
+        document.getElementById('projectChatInput').style.display = 'none';
+      }
+    }
 
     /* ========== UTILITY FUNCTIONS ========== */
     function parseLocalDate(dateStr) {
@@ -1477,13 +2310,133 @@
       return name.length > len ? name.slice(0, len) + '...' : name;
     }
 
+    /* ========== ADMIN MODE ========== */
+    function toggleAdminMode() {
+      const pwd = prompt('Admin Password:');
+      if (pwd === '0104') {
+        state.adminMode = !state.adminMode;
+        const btn = document.getElementById('adminToggle');
+        const badge = document.getElementById('adminBadge');
+        if (state.adminMode) {
+          btn.textContent = '🔓';
+          badge.style.display = 'inline-block';
+          document.getElementById('memberMgmtBtn').style.display = 'inline-block';
+          localStorage.setItem('af_adminMode', 'true');
+          _showToast('관리자 모드 활성화');
+        } else {
+          btn.textContent = '🔒';
+          badge.style.display = 'none';
+          document.getElementById('memberMgmtBtn').style.display = 'none';
+          localStorage.removeItem('af_adminMode');
+          _showToast('관리자 모드 비활성화');
+        }
+      } else if (pwd !== null) {
+        alert('Incorrect password');
+      }
+    }
+
+    function openMemberManagement() {
+      if (!state.adminMode) { alert('관리자 모드에서만 사용 가능합니다.'); return; }
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.id = 'memberMgmtOverlay';
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.style.maxWidth = '600px';
+      modal.style.maxHeight = '80vh';
+      modal.style.overflow = 'auto';
+      function renderMemberList() {
+        modal.innerHTML = '<h3 style="margin-bottom:16px;font-size:16px;font-weight:700;">팀원 관리</h3>' +
+          TEAM.map((m, i) => '<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6;">' +
+            '<div style="width:32px;height:32px;border-radius:50%;background:' + m.color + ';display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;">' + m.name.substring(0,1) + '</div>' +
+            '<input type="text" value="' + m.name + '" style="flex:1;padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;font-size:13px;" data-member-field="name" data-member-idx="' + i + '">' +
+            '<input type="text" value="' + m.role + '" style="width:120px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;font-size:13px;" data-member-field="role" data-member-idx="' + i + '">' +
+            '<input type="color" value="' + m.color + '" style="width:36px;height:30px;border:none;cursor:pointer;" data-member-field="color" data-member-idx="' + i + '">' +
+            '<button onclick="removeMember(' + i + ')" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:16px;" title="삭제">×</button>' +
+          '</div>').join('') +
+          '<div style="margin-top:12px;display:flex;gap:8px;">' +
+            '<button onclick="addNewMember()" class="btn" style="font-size:13px;">+ 팀원 추가</button>' +
+            '<button onclick="saveMemberChanges()" class="btn" style="font-size:13px;background:#10b981;">저장</button>' +
+            '<button onclick="document.getElementById(\'memberMgmtOverlay\').remove()" class="btn btn-secondary" style="font-size:13px;">닫기</button>' +
+          '</div>';
+      }
+      renderMemberList();
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+    }
+
+    function addNewMember() {
+      const newId = 'member_' + Date.now();
+      TEAM.push({ id: newId, name: '새 팀원', role: '역할', color: '#6b7280' });
+      openMemberManagement();
+      document.getElementById('memberMgmtOverlay')?.remove();
+      openMemberManagement();
+    }
+
+    function removeMember(idx) {
+      if (!confirm(TEAM[idx].name + ' 팀원을 삭제하시겠습니까?')) return;
+      TEAM.splice(idx, 1);
+      localStorage.setItem('af_team', JSON.stringify(TEAM));
+      document.getElementById('memberMgmtOverlay')?.remove();
+      openMemberManagement();
+      renderAll();
+    }
+
+    function saveMemberChanges() {
+      document.querySelectorAll('[data-member-field]').forEach(input => {
+        const idx = parseInt(input.dataset.memberIdx);
+        const field = input.dataset.memberField;
+        if (TEAM[idx]) TEAM[idx][field] = input.value;
+      });
+      localStorage.setItem('af_team', JSON.stringify(TEAM));
+      document.getElementById('memberMgmtOverlay')?.remove();
+      _showToast('팀원 정보가 저장되었습니다');
+      populateFilters();
+      renderAll();
+    }
+
+    function renderAll() {
+      if (state.currentTab === 'schedule') renderGantt();
+      else if (state.currentTab === 'projects') renderProjects();
+      else if (state.currentTab === 'team') renderTeam();
+      else if (state.currentTab === 'overview') renderOverview();
+      else if (state.currentTab === 'history') renderHistory();
+    }
+
+    function pushHistory(action, projectId, field, oldVal, newVal) {
+      const entry = {
+        timestamp: new Date().toISOString(),
+        action: action,
+        projectId: projectId,
+        field: field,
+        oldValue: oldVal,
+        newValue: newVal
+      };
+      state.history.push(entry);
+      localStorage.setItem('af_history', JSON.stringify(state.history));
+    }
+
+    function loadHistory() {
+      const saved = localStorage.getItem('af_history');
+      if (saved) {
+        try {
+          state.history = JSON.parse(saved);
+        } catch(e) {}
+      }
+    }
+
     /* ========== STORAGE (localStorage + Firebase 비동기) ========== */
     let _fb = { available: false, db: null, ref: null, debounce: null, skipNext: false };
 
     function saveProjects() {
       // 1) 항상 localStorage에 저장 (즉시, 안전)
       localStorage.setItem('af_projects', JSON.stringify(state.projects));
-      // 2) Firebase 연결 시 동기화
+      // 2) Recalculate Gantt range when projects change
+      recalcGanttRange();
+      // 3) Update chat project selector
+      populateChatProjectSelector();
+      // 4) Firebase 연결 시 동기화
       if (!_fb.available || !_fb.ref) return;
       clearTimeout(_fb.debounce);
       _fb.debounce = setTimeout(function() {
@@ -1518,27 +2471,36 @@
       s1.onerror = function() { _updateSync('로컬 모드', '#fef3c7', '#d97706'); };
       s1.onload = function() {
         var s2 = document.createElement('script');
-        s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
+        s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
         s2.onerror = function() { _updateSync('로컬 모드', '#fef3c7', '#d97706'); };
         s2.onload = function() {
-          try {
-            firebase.initializeApp({
-              apiKey: "AIzaSyBzH0D97lVbRy1enpfwpe_BGmhToj-f4_w",
-              authDomain: "product-scheduling.firebaseapp.com",
-              databaseURL: "https://product-scheduling-default-rtdb.asia-southeast1.firebasedatabase.app",
-              projectId: "product-scheduling",
-              storageBucket: "product-scheduling.firebasestorage.app",
-              messagingSenderId: "964218421788",
-              appId: "1:964218421788:web:5909fce52b6d4e6d4855d9"
-            });
-            _fb.db = firebase.database();
-            _fb.ref = _fb.db.ref('projects');
-            _fb.available = true;
-            _startFirebaseSync();
-          } catch(e) {
-            console.error('Firebase init fail:', e);
-            _updateSync('로컬 모드', '#fef3c7', '#d97706');
-          }
+          var s3 = document.createElement('script');
+          s3.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
+          s3.onerror = function() { _updateSync('로컬 모드', '#fef3c7', '#d97706'); };
+          s3.onload = function() {
+            try {
+              firebase.initializeApp({
+                apiKey: "AIzaSyBzH0D97lVbRy1enpfwpe_BGmhToj-f4_w",
+                authDomain: "product-scheduling.firebaseapp.com",
+                databaseURL: "https://product-scheduling-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "product-scheduling",
+                storageBucket: "product-scheduling.firebasestorage.app",
+                messagingSenderId: "964218421788",
+                appId: "1:964218421788:web:5909fce52b6d4e6d4855d9"
+              });
+              _fb.db = firebase.database();
+              _fb.ref = _fb.db.ref('projects');
+              _fb.auth = firebase.auth();
+              _fb.available = true;
+              _startFirebaseSync();
+              _initAuthCheck();
+            } catch(e) {
+              console.error('Firebase init fail:', e);
+              _updateSync('로컬 모드', '#fef3c7', '#d97706');
+              _initAuthCheck();
+            }
+          };
+          document.head.appendChild(s3);
         };
         document.head.appendChild(s2);
       };
@@ -1575,6 +2537,7 @@
             else if (state.currentTab === 'projects') renderProjects();
             else if (state.currentTab === 'team') renderTeam();
             else if (state.currentTab === 'overview') renderOverview();
+            else if (state.currentTab === 'history') renderHistory();
           }
         } else {
           // Firebase가 비어있으면 → 현재 로컬 데이터를 업로드
@@ -1596,7 +2559,7 @@
     /* ========== PROJECT DATA ========== */
     function initProjects() {
       const DEFAULT_PROJECTS = [];
-      DEFAULT_PROJECTS.push(...[
+    DEFAULT_PROJECTS.push(...[
   {
     "id": "P01",
     "name": "푸시 솔루션(플레어레인) 도입 + 발송 조건 설계",
@@ -1642,7 +2605,7 @@
         "start": "2026-07-09",
         "end": "2026-07-23",
         "members": [
-          "정혁수"
+          "정지섭"
         ]
       },
       "back": {
@@ -1656,18 +2619,21 @@
         "start": "2026-08-10",
         "end": "2026-08-14",
         "members": [
-          "신인재"
+          "신진섭"
         ]
       }
     },
     "deployDate": "2026-05-18",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P02",
-    "name": "신규 가입자 웰컴팩(쿠폰+머니)",
-    "desc": "네이버 오가닉 유입 급증 중이나 가입→첫예약 전환 미흡. CAC ~123,800원이 첫예약 없이 증발하는 구조",
+    "name": "신규 가입자 웰컴팩(쿠폰+머니) + 회원등급제",
+    "desc": "신규 가입자 웰컴팩(쿠폰+머니)으로 첫예약 전환율 증가 유도 및 회원등급제(기간대비 결제액 기준) 예약부문 구현. 네이버 오가닉 유입 급증 중 가입→첫예약 전환 강화.",
     "rationale": "네이버 오가닉 유입 급증 중이나 가입→첫예약 전환 미흡. CAC ~123,800원이 첫예약 없이 증발. 웰컴팩(쿠폰3,000+머니5,000)으로 첫예약 전환율 +8% 추정. P01(푸시) 완료 후 즉시 실행하여 5월 말 배포 목표",
     "tier": "TIER1",
     "score": 8.2,
@@ -1701,7 +2667,7 @@
         "start": "2026-08-17",
         "end": "2026-08-24",
         "members": [
-          "구자현"
+          "구범모"
         ]
       },
       "design": {
@@ -1715,7 +2681,7 @@
         "start": "2026-09-02",
         "end": "2026-09-14",
         "members": [
-          "정혁수"
+          "정지섭"
         ]
       },
       "back": {
@@ -1729,13 +2695,16 @@
         "start": "2026-09-28",
         "end": "2026-10-02",
         "members": [
-          "정혁수"
+          "정지섭"
         ]
       }
     },
     "deployDate": "2026-10-12",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P03",
@@ -1777,7 +2746,7 @@
         "start": "2026-10-05",
         "end": "2026-10-13",
         "members": [
-          "구자현"
+          "구범모"
         ]
       },
       "design": {
@@ -1791,7 +2760,7 @@
         "start": "2026-11-03",
         "end": "2026-11-17",
         "members": [
-          "정혁수"
+          "정지섭"
         ]
       },
       "back": {
@@ -1805,18 +2774,22 @@
         "start": "2026-12-21",
         "end": "2026-12-25",
         "members": [
-          "신인재"
+          "신진섭"
         ]
       }
     },
     "deployDate": "2026-11-23",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱",
+      "예약웹"
+    ]
   },
   {
     "id": "P04",
-    "name": "예약 검색 노출/정렬 개선",
-    "desc": "현재 랜덤 노출은 탐색→예약 전환 퍼널의 최대 누수 포인트. 정렬 기준(출조율, 조황, 최근 예약 수 등) 정의",
+    "name": "예약 플로우 통합 개선 (검색→상세→캘린더→결제→취소유도→추천)",
+    "desc": "예약 검색, 선박상세, 캘린더, 결제, 취소 유도, 추천상품을 하나의 플로우로 통합 개선하여 전환율 극대화",
     "rationale": "랜덤 노출이 탐색→예약 전환 퍼널의 최대 누수 포인트. 정렬 기준(출조율, 조황, 최근 예약 수) 도입으로 전환율 +15% 예상. 독립 실행 가능하며 ROI 3.0으로 전체 안건 중 최상위. 얼라이언스/영업팀과 기준 합의 필요",
     "tier": "TIER1",
     "score": 8.5,
@@ -1825,7 +2798,9 @@
     "urgency": 8,
     "complexity": 5,
     "dependency": 5,
-    "deps": [],
+    "deps": [
+      "P06"
+    ],
     "assignments": {
       "plan": [
         "koo"
@@ -1848,7 +2823,7 @@
         "start": "2026-05-19",
         "end": "2026-05-28",
         "members": [
-          "구자현"
+          "구범모"
         ]
       },
       "design": {
@@ -1876,208 +2851,17 @@
         "start": "2026-08-27",
         "end": "2026-09-02",
         "members": [
-          "신인재"
+          "신진섭"
         ]
       }
     },
     "deployDate": "2026-06-01",
     "status": "대기",
-    "continuous": false
-  },
-  {
-    "id": "P05",
-    "name": "배너 전면 교체 (4/1 시한)",
-    "desc": "4월 시즌 메시지 + 챔피언십(4/25) 프로모션 반영. 시한성 이슈로 지연 불가",
-    "rationale": "난이도 낮고 리소스 소모 최소. 4/1 교체 완료 필수",
-    "tier": "TIER1",
-    "score": 7.5,
-    "gmvImpact": "완료",
-    "impact": 6,
-    "urgency": 10,
-    "complexity": 2,
-    "dependency": 3,
-    "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung",
-        "shin"
-      ],
-      "back": [],
-      "qa": []
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-03-27",
-        "end": "2026-03-31"
-      },
-      "design": {
-        "start": "2026-03-27",
-        "end": "2026-03-31"
-      },
-      "front": {
-        "start": "2026-03-31",
-        "end": "2026-04-01"
-      },
-      "back": {
-        "start": "",
-        "end": ""
-      },
-      "qa": {
-        "start": "",
-        "end": ""
-      }
-    },
-    "deployDate": "2026-04-01",
-    "status": "완료",
-    "continuous": false
-  },
-  {
-    "id": "P06",
-    "name": "선박상세 캘린더 및 날짜별 상품 전환 최적화",
-    "desc": "선박상세 페이지의 캘린더/날짜별 상품 영역은 고객이 최종 예약 결정을 내리는 트랜잭션 전환 포인트",
-    "rationale": "검색 개선(P04)으로 상세 유입 증가 시점에 이 영역이 최적화되어 있지 않으면 퍼널 마지막 단계에서 이탈",
-    "tier": "TIER2",
-    "score": 7.3,
-    "gmvImpact": "GMV +5%, 월 +₩262M",
-    "impact": 8,
-    "urgency": 7,
-    "complexity": 6,
-    "dependency": 5,
-    "deps": [
-      "P04"
-    ],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-09-03",
-        "end": "2026-09-15",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2026-09-16",
-        "end": "2026-09-28",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-10-05",
-        "end": "2026-10-21",
-        "members": [
-          "정혁수"
-        ]
-      },
-      "back": {
-        "start": "2026-11-23",
-        "end": "2026-12-09",
-        "members": [
-          "강상배"
-        ]
-      },
-      "qa": {
-        "start": "2026-12-10",
-        "end": "2026-12-16",
-        "members": [
-          "송창석"
-        ]
-      }
-    },
-    "deployDate": "2026-10-19",
-    "status": "대기",
-    "continuous": false
-  },
-  {
-    "id": "P07",
-    "name": "예약완료 후 커머스 연계 추천상품",
-    "desc": "3% 수수료 단일 매출 구조 탈피의 첫 고리. 예약 확정 시점에 채비/미끼/장비 추천",
-    "rationale": "객단가(ARPU) 상승 + 커머스 GMV가 예약 트래픽에 연동. 1차는 배너라도 빠르게 삽입",
-    "tier": "TIER2",
-    "score": 7,
-    "gmvImpact": "ARPU +₩3,200, 커머스 GMV 신규",
-    "impact": 7,
-    "urgency": 7,
-    "complexity": 4,
-    "dependency": 5,
-    "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-06-11",
-        "end": "2026-06-22",
-        "members": [
-          "구자현"
-        ]
-      },
-      "design": {
-        "start": "2026-07-09",
-        "end": "2026-07-16",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-07-17",
-        "end": "2026-07-29",
-        "members": [
-          "신인재"
-        ]
-      },
-      "back": {
-        "start": "2026-09-09",
-        "end": "2026-09-21",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "2026-10-16",
-        "end": "2026-10-21",
-        "members": [
-          "송창석"
-        ]
-      }
-    },
-    "deployDate": "2027-02-01",
-    "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱",
+      "예약웹"
+    ]
   },
   {
     "id": "P08",
@@ -2138,17 +2922,20 @@
         "start": "2026-12-23",
         "end": "2026-12-28",
         "members": [
-          "정혁수"
+          "정지섭"
         ]
       }
     },
     "deployDate": "2026-10-26",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P09",
-    "name": "정산 기획서 작성 + 토스페이먼츠 미팅",
+    "name": "정산 기획서 작성",
     "desc": "공급 사이드(선주) 이탈 방어 인프라. 정산 구조가 불투명하면 선주 이탈 → 공급 감소 → GMV 붕괴",
     "rationale": "3월 말 실적 기반으로 4월 미팅 요청하는 타이밍",
     "tier": "TIER2",
@@ -2174,7 +2961,7 @@
         "start": "2026-05-01",
         "end": "2026-05-12",
         "members": [
-          "구자현"
+          "구범모"
         ]
       },
       "design": {
@@ -2196,7 +2983,10 @@
     },
     "deployDate": "2026-04-27",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "기타"
+    ]
   },
   {
     "id": "P10",
@@ -2248,7 +3038,7 @@
         "start": "2026-09-10",
         "end": "2026-10-15",
         "members": [
-          "신인재",
+          "신진섭",
           "송창석"
         ]
       },
@@ -2264,17 +3054,20 @@
         "start": "2026-11-23",
         "end": "2026-12-03",
         "members": [
-          "정혁수"
+          "정지섭"
         ]
       }
     },
     "deployDate": "2026-10-05",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "선주모바일"
+    ]
   },
   {
     "id": "P11",
-    "name": "지표 메일링 통합 → 대시보드 전 단계",
+    "name": "지표 메일링 일부 수정",
     "desc": "지표 파편화로 매번 수작업 분석. 통합 메일(전일 요약+핵심 지표)로 1차 자동화 후 대시보드로 발전",
     "rationale": "Series A IR에서 '데이터 드리븐 조직' 근거로 활용 가능",
     "tier": "TIER2",
@@ -2301,7 +3094,7 @@
         "start": "2026-05-29",
         "end": "2026-06-10",
         "members": [
-          "구자현"
+          "구범모"
         ]
       },
       "design": {
@@ -2326,12 +3119,15 @@
     },
     "deployDate": "2026-05-18",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "기타"
+    ]
   },
   {
     "id": "P12",
-    "name": "홈 모듈 리뉴얼 + 하단 네비게이션 변경",
-    "desc": "UX 개선. 포인트맵 적용, 중고 메뉴 이동 포함",
+    "name": "예약탭 기본탭 변경 + 하단 네비게이션 변경 (홈→포인트→예약→쇼핑→커뮤니티)",
+    "desc": "하단 네비게이션을 홈→포인트→예약→쇼핑→커뮤니티로 재구성하고 예약탭을 기본탭으로 설정",
     "rationale": "TIER1~TIER2 안정화 후 착수해도 시기적으로 적절",
     "tier": "TIER3",
     "score": 5.8,
@@ -2378,7 +3174,7 @@
         "start": "2026-11-17",
         "end": "2026-12-03",
         "members": [
-          "신인재"
+          "신진섭"
         ]
       },
       "back": {
@@ -2395,81 +3191,10 @@
     },
     "deployDate": "2027-03-22",
     "status": "대기",
-    "continuous": false
-  },
-  {
-    "id": "P13",
-    "name": "선박상세 개선 (조황 최상위 배치 + AI 정보 요약)",
-    "desc": "전환율 기여 가능하나 검색 정렬이 먼저 해결되어야 상세페이지 도달 모수 증가",
-    "rationale": "조황 섹션 배치는 프론트 작업량 적어 P04와 묶어 진행 가능",
-    "tier": "TIER3",
-    "score": 5.5,
-    "gmvImpact": "GMV +3%, 전환율 소폭 개선",
-    "impact": 6,
-    "urgency": 5,
-    "complexity": 5,
-    "dependency": 5,
-    "deps": [
-      "P04",
-      "P06"
-    ],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-12-17",
-        "end": "2026-12-28",
-        "members": [
-          "구자현"
-        ]
-      },
-      "design": {
-        "start": "2026-12-29",
-        "end": "2027-01-07",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2027-01-08",
-        "end": "2027-01-26",
-        "members": [
-          "정혁수"
-        ]
-      },
-      "back": {
-        "start": "2027-01-27",
-        "end": "2027-02-08",
-        "members": [
-          "강상배"
-        ]
-      },
-      "qa": {
-        "start": "2027-02-09",
-        "end": "2027-02-12",
-        "members": [
-          "송창석"
-        ]
-      }
-    },
-    "deployDate": "2027-03-29",
-    "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P14",
@@ -2500,7 +3225,7 @@
         "start": "2026-05-13",
         "end": "2026-05-18",
         "members": [
-          "구자현"
+          "구범모"
         ]
       },
       "design": {
@@ -2525,7 +3250,10 @@
     },
     "deployDate": "2027-01-18",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P15",
@@ -2571,7 +3299,7 @@
         "start": "2026-07-09",
         "end": "2026-07-16",
         "members": [
-          "신인재"
+          "신진섭"
         ]
       },
       "back": {
@@ -2585,13 +3313,16 @@
         "start": "2026-07-27",
         "end": "2026-07-29",
         "members": [
-          "정혁수"
+          "정지섭"
         ]
       }
     },
     "deployDate": "2027-04-05",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P16",
@@ -2652,55 +3383,10 @@
     },
     "deployDate": "2026-06-15",
     "status": "대기",
-    "continuous": false
-  },
-  {
-    "id": "P17",
-    "name": "앱스토어 해시태그 추가",
-    "desc": "5분짜리 작업. ASO 효과 즉시 발생. 물반고기반/선상24/물때표/인천배낚시/쭈꾸미낚시 키워드 추가",
-    "rationale": "즉시 처리 가능. 난이도 최저",
-    "tier": "TIER4",
-    "score": 4,
-    "gmvImpact": "완료",
-    "impact": 3,
-    "urgency": 5,
-    "complexity": 1,
-    "dependency": 1,
-    "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [],
-      "front": [],
-      "back": [],
-      "qa": []
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-04-08",
-        "end": "2026-04-08"
-      },
-      "design": {
-        "start": "",
-        "end": ""
-      },
-      "front": {
-        "start": "",
-        "end": ""
-      },
-      "back": {
-        "start": "",
-        "end": ""
-      },
-      "qa": {
-        "start": "",
-        "end": ""
-      }
-    },
-    "deployDate": "2026-04-08",
-    "status": "완료",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "포인트맵"
+    ]
   },
   {
     "id": "P18",
@@ -2754,7 +3440,10 @@
     },
     "deployDate": "",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P19",
@@ -2802,15 +3491,18 @@
     },
     "deployDate": "",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P20",
     "name": "예약 광고 기획",
     "desc": "광고 매출은 야놀자 모델 참고 가능. 광고주에게 팔 트래픽 볼륨이 먼저 확보되어야",
     "rationale": "Q2 KPI 달성 후 Q3 기획 착수",
-    "tier": "TIER4",
-    "score": 3,
+    "tier": "CRITICAL",
+    "score": 9.0,
     "gmvImpact": "신규 매출원, 트래픽 확보 후",
     "impact": 5,
     "urgency": 2,
@@ -2851,7 +3543,10 @@
     },
     "deployDate": "",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P21",
@@ -2899,7 +3594,10 @@
     },
     "deployDate": "",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "기타"
+    ]
   },
   {
     "id": "P22",
@@ -2965,13 +3663,16 @@
         "start": "2026-11-10",
         "end": "2026-11-16",
         "members": [
-          "신인재"
+          "신진섭"
         ]
       }
     },
     "deployDate": "2027-02-22",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "기타"
+    ]
   },
   {
     "id": "P23",
@@ -3006,7 +3707,7 @@
         "start": "2026-07-06",
         "end": "2026-07-15",
         "members": [
-          "구자현"
+          "구범모"
         ]
       },
       "design": {
@@ -3017,7 +3718,7 @@
         "start": "2026-08-18",
         "end": "2026-08-28",
         "members": [
-          "정혁수"
+          "정지섭"
         ]
       },
       "back": {
@@ -3031,155 +3732,16 @@
         "start": "2026-11-04",
         "end": "2026-11-09",
         "members": [
-          "신인재"
+          "신진섭"
         ]
       }
     },
     "deployDate": "2027-02-15",
     "status": "대기",
-    "continuous": false
-  },
-  {
-    "id": "P24",
-    "name": "예약 결제 뎁스 줄이기",
-    "desc": "예약 결제 과정의 단계를 줄여 전환율 향상",
-    "rationale": "예약사업 집중. 결제 퍼널 최적화",
-    "tier": "TIER2",
-    "score": 7,
-    "gmvImpact": "GMV +4%, 결제 전환율 개선",
-    "impact": 7,
-    "urgency": 7,
-    "complexity": 4,
-    "dependency": 4,
-    "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-06-23",
-        "end": "2026-07-03",
-        "members": [
-          "구자현"
-        ]
-      },
-      "design": {
-        "start": "2026-07-17",
-        "end": "2026-07-29",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-10-16",
-        "end": "2026-11-03",
-        "members": [
-          "신인재"
-        ]
-      },
-      "back": {
-        "start": "2026-11-23",
-        "end": "2026-12-03",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "2026-12-17",
-        "end": "2026-12-23",
-        "members": [
-          "송창석"
-        ]
-      }
-    },
-    "deployDate": "2027-02-08",
-    "status": "대기",
-    "continuous": false
-  },
-  {
-    "id": "P25",
-    "name": "예약 취소 시 일자변경 등 유도",
-    "desc": "취소율 30.6% 감소. 취소 대신 일자변경/크레딧 전환 유도",
-    "rationale": "취소율 30.6%는 GMV 최대 누수점. 일자변경/크레딧 전환 유도만으로 취소율 5%p 감소 시 월 GMV +₩260M 추정. 개발 공수 대비 ROI 최상위. P04(검색 개선)과 병렬 진행하여 5월 말 배포 목표",
-    "tier": "TIER1",
-    "score": 8.5,
-    "gmvImpact": "GMV +5%, 취소율 5%p↓",
-    "impact": 9,
-    "urgency": 9,
-    "complexity": 5,
-    "dependency": 4,
-    "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-05-21",
-        "end": "2026-06-02",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2026-06-09",
-        "end": "2026-06-19",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-07-30",
-        "end": "2026-08-17",
-        "members": [
-          "정혁수"
-        ]
-      },
-      "back": {
-        "start": "2026-08-18",
-        "end": "2026-08-28",
-        "members": [
-          "강상배"
-        ]
-      },
-      "qa": {
-        "start": "2026-09-03",
-        "end": "2026-09-09",
-        "members": [
-          "신인재"
-        ]
-      }
-    },
-    "deployDate": "2026-10-26",
-    "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P26",
@@ -3219,7 +3781,7 @@
         "start": "2026-04-14",
         "end": "2026-04-30",
         "members": [
-          "구자현",
+          "구범모",
           "서현일"
         ]
       },
@@ -3234,8 +3796,8 @@
         "start": "2026-05-20",
         "end": "2026-07-08",
         "members": [
-          "정혁수",
-          "신인재",
+          "정지섭",
+          "신진섭",
           "송창석"
         ]
       },
@@ -3257,82 +3819,10 @@
     },
     "deployDate": "2026-08-14",
     "status": "대기",
-    "continuous": false
-  },
-  {
-    "id": "P27",
-    "name": "회원 등급제",
-    "desc": "장기 로열티 프로그램. 등급별 혜택 차등",
-    "rationale": "재예약 증가 전략과 연계. 장기적 고객 Lock-in",
-    "tier": "TIER3",
-    "score": 5,
-    "gmvImpact": "간접, 장기 로열티",
-    "impact": 6,
-    "urgency": 4,
-    "complexity": 5,
-    "dependency": 4,
-    "deps": [
-      "P02",
-      "P03"
-    ],
-    "assignments": {
-      "plan": [
-        "koo",
-        "seo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-12-28",
-        "end": "2027-01-06",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2027-01-08",
-        "end": "2027-01-19",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2027-01-20",
-        "end": "2027-02-05",
-        "members": [
-          "송창석"
-        ]
-      },
-      "back": {
-        "start": "2027-02-08",
-        "end": "2027-02-24",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "2027-02-25",
-        "end": "2027-03-03",
-        "members": [
-          "신인재"
-        ]
-      }
-    },
-    "deployDate": "2027-04-12",
-    "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P28",
@@ -3387,7 +3877,10 @@
     },
     "deployDate": "",
     "status": "진행",
-    "continuous": true
+    "continuous": true,
+    "serviceTypes": [
+      "기타"
+    ]
   },
   {
     "id": "P29",
@@ -3427,7 +3920,7 @@
         "start": "2026-12-04",
         "end": "2026-12-16",
         "members": [
-          "구자현"
+          "구범모"
         ]
       },
       "design": {
@@ -3441,7 +3934,7 @@
         "start": "2027-02-02",
         "end": "2027-02-23",
         "members": [
-          "정혁수"
+          "정지섭"
         ]
       },
       "back": {
@@ -3455,13 +3948,16 @@
         "start": "2027-03-18",
         "end": "2027-03-25",
         "members": [
-          "신인재"
+          "신진섭"
         ]
       }
     },
     "deployDate": "2026-12-28",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "고객앱"
+    ]
   },
   {
     "id": "P30",
@@ -3529,13 +4025,139 @@
         "start": "2027-02-02",
         "end": "2027-02-08",
         "members": [
-          "신인재"
+          "신진섭"
         ]
       }
     },
     "deployDate": "2027-01-25",
     "status": "대기",
-    "continuous": false
+    "continuous": false,
+    "serviceTypes": [
+      "선주모바일"
+    ]
+  },
+  {
+    "id": "P31",
+    "name": "포인트맵 CCTV 공공API 마커 구현",
+    "desc": "민물 유저 저수지 수위 관찰을 위한 CCTV 공공API 마커 구현",
+    "rationale": "포인트맵 기능 강화",
+    "tier": "TIER2",
+    "score": 7.0,
+    "gmvImpact": "",
+    "impact": 7,
+    "urgency": 6,
+    "complexity": 5,
+    "dependency": 3,
+    "deps": [],
+    "assignments": {
+      "plan": [
+        "seo"
+      ],
+      "design": [],
+      "front": [
+        "song"
+      ],
+      "back": [
+        "choi"
+      ],
+      "qa": []
+    },
+    "phases": {
+      "plan": {
+        "start": "",
+        "end": "",
+        "members": []
+      },
+      "design": {
+        "start": "",
+        "end": "",
+        "members": []
+      },
+      "front": {
+        "start": "",
+        "end": "",
+        "members": []
+      },
+      "back": {
+        "start": "",
+        "end": "",
+        "members": []
+      },
+      "qa": {
+        "start": "",
+        "end": "",
+        "members": []
+      }
+    },
+    "deployDate": "",
+    "status": "대기",
+    "continuous": false,
+    "serviceTypes": [
+      "포인트맵"
+    ]
+  },
+  {
+    "id": "P32",
+    "name": "하나손해보험 보험상품 구현",
+    "desc": "예약웹, 고객앱에 하나손해보험 보험상품 구현",
+    "rationale": "보험 수익 증대",
+    "tier": "TIER2",
+    "score": 6.5,
+    "gmvImpact": "",
+    "impact": 7,
+    "urgency": 5,
+    "complexity": 6,
+    "dependency": 4,
+    "deps": [],
+    "assignments": {
+      "plan": [
+        "seo"
+      ],
+      "design": [
+        "kim_hc"
+      ],
+      "front": [
+        "jung"
+      ],
+      "back": [
+        "choi"
+      ],
+      "qa": []
+    },
+    "phases": {
+      "plan": {
+        "start": "",
+        "end": "",
+        "members": []
+      },
+      "design": {
+        "start": "",
+        "end": "",
+        "members": []
+      },
+      "front": {
+        "start": "",
+        "end": "",
+        "members": []
+      },
+      "back": {
+        "start": "",
+        "end": "",
+        "members": []
+      },
+      "qa": {
+        "start": "",
+        "end": "",
+        "members": []
+      }
+    },
+    "deployDate": "",
+    "status": "대기",
+    "continuous": false,
+    "serviceTypes": [
+      "예약웹",
+      "고객앱"
+    ]
   }
 ]);
       // 항상 기본 데이터로 시작 (localStorage 오염 방지)
@@ -3547,6 +4169,9 @@
     function renderGantt() {
       // 성능 가드: 스케줄 탭이 아니면 스킵
       if (state.currentTab !== 'schedule') return;
+
+      // Recalculate gantt range dynamically
+      recalcGanttRange();
 
       const namesScroll = document.getElementById('namesScroll');
       const ganttBars = document.getElementById('ganttBars');
@@ -3684,8 +4309,7 @@
       const filtered = filterProjects();
       if (state.view === 'project') {
         renderProjectView(filtered, namesScroll, ganttBars);
-        // 의존성 화살표 렌더링
-        renderDependencyLines(filtered, ganttBars);
+        // 의존성은 프로젝트 이름 옆 아이콘+툴팁으로 표시 (점선 화살표 제거)
       } else {
         renderMemberView(filtered, namesScroll, ganttBars);
       }
@@ -4037,6 +4661,7 @@
       else if (state.currentTab === 'projects') renderProjects();
       else if (state.currentTab === 'team') renderTeam();
       else if (state.currentTab === 'overview') renderOverview();
+            else if (state.currentTab === 'history') renderHistory();
     }
 
     function _showToast(msg) {
@@ -4299,8 +4924,11 @@
                 <option value="Figma" ${link.type === 'Figma' ? 'selected' : ''}>Figma</option>
                 <option value="PRD" ${link.type === 'PRD' ? 'selected' : ''}>PRD</option>
                 <option value="API" ${link.type === 'API' ? 'selected' : ''}>API</option>
+                <option value="TC" ${link.type === 'TC' ? 'selected' : ''}>TC</option>
                 <option value="기타" ${link.type === '기타' ? 'selected' : ''}>기타</option>
+                <option value="__custom__" ${!['기획서','Figma','PRD','API','TC','기타'].includes(link.type) && link.type ? 'selected' : ''}>직접입력</option>
               </select>
+              <input type="text" class="detail-input link-custom-type" data-link-idx="${i}" value="${!['기획서','Figma','PRD','API','TC','기타','__custom__',''].includes(link.type) ? link.type : ''}" placeholder="타입명" style="width:70px;flex-shrink:0;font-size:12px;padding:4px 6px;display:${!['기획서','Figma','PRD','API','TC','기타',''].includes(link.type) && link.type ? 'block' : 'none'};">
               <input type="text" class="detail-input link-url-input" data-link-idx="${i}" value="${link.url || ''}" placeholder="URL 입력" style="flex: 1; font-size: 12px; padding: 4px 8px;">
               <button onclick="removeLink(${i})" style="border: none; background: none; color: #ef4444; cursor: pointer; font-size: 16px; padding: 2px 4px; flex-shrink: 0;" title="삭제">×</button>
             </div>`;
@@ -4311,6 +4939,13 @@
 
       panel.classList.add('open');
       document.getElementById('panelBackdrop').classList.add('open');
+      // Bind link type change for custom input toggle
+      document.querySelectorAll('.link-type-select').forEach(sel => {
+        sel.addEventListener('change', function() {
+          const customInput = this.parentElement.querySelector('.link-custom-type');
+          if (customInput) customInput.style.display = this.value === '__custom__' ? 'block' : 'none';
+        });
+      });
     }
 
     function closeDetailPanel() {
@@ -4350,9 +4985,15 @@
       linkTypes.forEach((sel, i) => {
         const url = linkUrls[i].value.trim();
         if (url) {
-          state.selectedProject.links.push({ type: sel.value, url });
+          let type = sel.value;
+          if (type === '__custom__') {
+            const customInput = sel.parentElement.querySelector('.link-custom-type');
+            type = customInput ? customInput.value.trim() || '기타' : '기타';
+          }
+          state.selectedProject.links.push({ type, url });
         }
       });
+      pushHistory('edit', state.selectedProject.id, '링크', null, state.selectedProject.links.length + '개');
       saveProjects();
       _showToast('저장되었습니다');
       renderGantt();
@@ -4684,6 +5325,47 @@
       });
     }
 
+    function renderHistory() {
+      const container = document.getElementById('historyContent');
+      if (!container) return;
+      const hist = (state.history || []).slice().reverse();
+      if (hist.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:60px 0;">변경 이력이 없습니다.</div>';
+        return;
+      }
+      const ACTION_ICONS = { create: '➕', edit: '✏️', delete: '🗑️', status: '🔄' };
+      const ACTION_LABELS = { create: '생성', edit: '수정', delete: '삭제', status: '상태변경' };
+      container.innerHTML = hist.map(h => {
+        const icon = ACTION_ICONS[h.action] || '📝';
+        const label = ACTION_LABELS[h.action] || h.action;
+        const dt = new Date(h.timestamp);
+        const timeStr = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+        let detail = '';
+        if (h.field) detail += '<span style="color:#6366f1;font-weight:600;">' + h.field + '</span> ';
+        if (h.oldVal !== undefined && h.oldVal !== null) detail += '<span style="color:#ef4444;text-decoration:line-through;">' + String(h.oldVal).substring(0,50) + '</span> → ';
+        if (h.newVal !== undefined && h.newVal !== null) detail += '<span style="color:#10b981;">' + String(h.newVal).substring(0,50) + '</span>';
+        return '<div style="display:flex;gap:12px;padding:12px 16px;background:white;border-radius:8px;border:1px solid #e5e7eb;align-items:flex-start;">' +
+          '<div style="font-size:20px;flex-shrink:0;">' + icon + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">' +
+              '<span style="font-weight:600;font-size:13px;">[' + label + ']</span>' +
+              '<span style="font-weight:600;font-size:13px;">' + (h.projectId || '') + ' ' + (h.projectName || '') + '</span>' +
+            '</div>' +
+            (detail ? '<div style="font-size:12px;color:#6b7280;">' + detail + '</div>' : '') +
+          '</div>' +
+          '<div style="font-size:11px;color:#9ca3af;white-space:nowrap;">' + timeStr + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function clearHistory() {
+      if (!confirm('이력을 모두 삭제하시겠습니까?')) return;
+      state.history = [];
+      localStorage.removeItem('af_history');
+      renderHistory();
+      _showToast('이력이 초기화되었습니다');
+    }
+
     function renderOverview() {
       const all = state.projects;
       const inProgress = all.filter(p => p.status === '진행').length;
@@ -4920,8 +5602,11 @@
                 <option value="Figma" ${link.type === 'Figma' ? 'selected' : ''}>Figma</option>
                 <option value="PRD" ${link.type === 'PRD' ? 'selected' : ''}>PRD</option>
                 <option value="API" ${link.type === 'API' ? 'selected' : ''}>API</option>
+                <option value="TC" ${link.type === 'TC' ? 'selected' : ''}>TC</option>
                 <option value="기타" ${link.type === '기타' ? 'selected' : ''}>기타</option>
+                <option value="__custom__" ${!['기획서','Figma','PRD','API','TC','기타'].includes(link.type) && link.type ? 'selected' : ''}>직접입력</option>
               </select>
+              <input type="text" class="detail-input link-custom-type" data-link-idx="${i}" value="${!['기획서','Figma','PRD','API','TC','기타','__custom__',''].includes(link.type) ? link.type : ''}" placeholder="타입명" style="width:70px;flex-shrink:0;font-size:12px;padding:4px 6px;display:${!['기획서','Figma','PRD','API','TC','기타',''].includes(link.type) && link.type ? 'block' : 'none'};">
               <input type="text" class="detail-input link-url-input" data-link-idx="${i}" value="${link.url || ''}" placeholder="URL 입력" style="flex: 1; font-size: 12px; padding: 4px 8px;">
               <button onclick="removeLink(${i})" style="border: none; background: none; color: #ef4444; cursor: pointer; font-size: 16px; padding: 2px 4px; flex-shrink: 0;" title="삭제">×</button>
             </div>
@@ -4986,6 +5671,20 @@
 
     /* ========== INIT ========== */
     function init() {
+      // Load history and restore admin mode
+      loadHistory();
+      if (localStorage.getItem('af_adminMode') === 'true') {
+        state.adminMode = true;
+        document.getElementById('adminToggle').textContent = '🔓';
+        document.getElementById('adminBadge').style.display = 'inline-block';
+        document.getElementById('memberMgmtBtn').style.display = 'inline-block';
+      }
+      // Restore saved team
+      const savedTeam = localStorage.getItem('af_team');
+      if (savedTeam) {
+        try { const t = JSON.parse(savedTeam); if (t.length) { TEAM.length = 0; TEAM.push(...t); } } catch(e) {}
+      }
+
       // 1단계: 즉시 데이터 로드 및 렌더 (Firebase 무관하게 화면 먼저 표시)
       initProjects();
 
@@ -5124,6 +5823,20 @@
     window.redo = redo;
     window.exportCSV = exportCSV;
     window._recalcScore = _recalcScore;
+    window.clearHistory = clearHistory;
+    window.renderHistory = renderHistory;
+    window.openMemberManagement = openMemberManagement;
+    window.addNewMember = addNewMember;
+    window.removeMember = removeMember;
+    window.saveMemberChanges = saveMemberChanges;
+    window.toggleAdminMode = toggleAdminMode;
+    window.renderAll = renderAll;
+    window.loginWithGoogle = loginWithGoogle;
+    window.logoutUser = logoutUser;
+    window.toggleChatPanel = toggleChatPanel;
+    window.switchChatTab = switchChatTab;
+    window.switchProject = switchProject;
+    window.sendChatMessage = sendChatMessage;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
