@@ -377,7 +377,7 @@
     }
 
     .bar-row {
-      height: 36px;
+      min-height: 36px;
       border-bottom: 1px solid #e5e7eb;
       position: relative;
       display: flex;
@@ -5071,10 +5071,20 @@
       const filtered = filterProjects();
       if (state.view === 'project') {
         renderProjectView(filtered, namesScroll, ganttBars);
-        // 의존성은 프로젝트 이름 옆 아이콘+툴팁으로 표시 (점선 화살표 제거)
       } else {
         renderMemberView(filtered, namesScroll, ganttBars);
       }
+
+      // name-row ↔ bar-row 높이 동기화 (서비스 태그 여러줄 대응)
+      requestAnimationFrame(function() {
+        var barRows = ganttBars.querySelectorAll('.bar-row');
+        barRows.forEach(function(br) {
+          if (br._pairedNameRow) {
+            var h = br._pairedNameRow.offsetHeight;
+            if (h > 36) br.style.height = h + 'px';
+          }
+        });
+      });
     }
 
     function renderDependencyLines(projects, container) {
@@ -5195,29 +5205,45 @@
           topLine.onclick = function() { openDetailPanel(project.id); };
           topLine.style.cursor = 'pointer';
 
-          // 2행: 날짜 + 배포일 + 채팅버튼
-          const bottomLine = document.createElement('div');
-          bottomLine.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%;font-size:10px;color:#9ca3af;';
-          var svcTagsHTML = '';
-          if (project.serviceTypes && project.serviceTypes.length > 0) {
+          // 2행: 서비스 태그 (태그 많으면 줄바꿈)
+          var hasSvcTags = project.serviceTypes && project.serviceTypes.length > 0;
+          if (hasSvcTags) {
+            var svcLine = document.createElement('div');
+            svcLine.style.cssText = 'display:flex;flex-wrap:wrap;gap:2px;width:100%;';
             project.serviceTypes.forEach(function(st) {
-              svcTagsHTML += serviceTagHTML(st);
+              svcLine.innerHTML += serviceTagHTML(st);
             });
+            nameRow.appendChild(svcLine);
           }
-          bottomLine.innerHTML = svcTagsHTML + '<span>' + startStr + ' ~ ' + endStr + '</span>' + (deployStr ? '<span style="color:#f97316;font-weight:600;" title="배포일">🚀' + deployStr + '</span>' : '');
 
-          // 채팅 버튼
-          const chatBtn = document.createElement('button');
-          chatBtn.textContent = '💬';
+          // 3행: 날짜 + 배포일 + 채팅버튼
+          var bottomLine = document.createElement('div');
+          bottomLine.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%;font-size:10px;color:#9ca3af;';
+          bottomLine.innerHTML = '<span>' + startStr + ' ~ ' + endStr + '</span>' + (deployStr ? '<span style="color:#f97316;font-weight:600;" title="배포일">🚀' + deployStr + '</span>' : '');
+
+          // 채팅 버튼 (읽지 않은 메시지 / 멘션 표기)
+          var chatBtn = document.createElement('button');
           chatBtn.title = project.name + ' 채팅';
-          chatBtn.style.cssText = 'background:none;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:11px;padding:0 4px;line-height:16px;margin-left:auto;color:#6b7280;';
+          chatBtn.style.cssText = 'position:relative;background:none;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:11px;padding:0 4px;line-height:16px;margin-left:auto;color:#6b7280;';
+          chatBtn.innerHTML = '💬';
+
+          // 읽지 않은 메시지 / 멘션 배지 체크
+          var roomInfo = typeof _roomState !== 'undefined' ? _roomState[project.id] : null;
+          if (roomInfo) {
+            if (roomInfo.hasMention) {
+              chatBtn.innerHTML = '💬<span style="position:absolute;top:-5px;right:-5px;width:10px;height:10px;border-radius:50%;background:#f59e0b;border:1.5px solid #fff;display:block;" title="멘션"></span>';
+              chatBtn.style.borderColor = '#f59e0b';
+            } else if (roomInfo.unread > 0) {
+              chatBtn.innerHTML = '💬<span style="position:absolute;top:-5px;right:-5px;min-width:14px;height:14px;border-radius:7px;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid #fff;">' + roomInfo.unread + '</span>';
+              chatBtn.style.borderColor = '#ef4444';
+            }
+          }
+
           chatBtn.onclick = function(e) {
             e.stopPropagation();
             document.getElementById('chatPanel').classList.add('open');
             switchChatTab('project');
-            var sel = document.getElementById('projectChatSelect');
-            sel.value = project.id;
-            switchProject(project.id);
+            enterRoom(project.id);
             clearChatBadge();
           };
           bottomLine.appendChild(chatBtn);
@@ -5229,6 +5255,7 @@
           const row = document.createElement('div');
           row.className = 'bar-row' + (rowIdx % 2 === 1 ? ' row-even' : '');
           row.id = `row-${project.id}`;
+          row._pairedNameRow = nameRow;
 
           // Render bars for each phase
           ['plan', 'design', 'front', 'back', 'qa'].forEach(phase => {
@@ -5700,6 +5727,10 @@
           <div style="font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 10px;">편집</div>
         </div>
         <div class="detail-section">
+          <label class="detail-label">서비스 종류 <span style="font-size:10px;color:#9ca3af;font-weight:400;">(복수 선택 가능)</span></label>
+          <div id="detailServiceCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+        </div>
+        <div class="detail-section">
           <label class="detail-label">이름</label>
           <input type="text" class="detail-input" id="detailName" value="${p.name}">
         </div>
@@ -5724,11 +5755,9 @@
             <option value="대기" ${p.status === '대기' ? 'selected' : ''}>대기</option>
             <option value="진행" ${p.status === '진행' ? 'selected' : ''}>진행</option>
             <option value="완료" ${p.status === '완료' ? 'selected' : ''}>완료</option>
+            <option value="연기" ${p.status === '연기' ? 'selected' : ''}>연기</option>
+            <option value="Deprecated" ${p.status === 'Deprecated' ? 'selected' : ''}>Deprecated</option>
           </select>
-        </div>
-        <div class="detail-section">
-          <label class="detail-label">서비스 종류 <span style="font-size:10px;color:#9ca3af;font-weight:400;">(복수 선택 가능)</span></label>
-          <div id="detailServiceCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
         </div>
         <div class="detail-section">
           <label class="detail-label">메모 / 코멘트</label>
@@ -6510,7 +6539,7 @@
       if (!project) return;
       const sel = document.createElement('select');
       sel.style.cssText = 'width:100%; font-size:13px; padding:4px; border:1px solid #6366f1; border-radius:4px;';
-      ['대기', '진행', '완료'].forEach(s => {
+      ['대기', '진행', '완료', '연기', 'Deprecated'].forEach(s => {
         const opt = document.createElement('option');
         opt.value = s; opt.textContent = s;
         if (project.status === s) opt.selected = true;
@@ -6573,6 +6602,10 @@
           <input type="text" class="detail-input" value="${newId}" disabled style="background: #f3f4f6; color: #6b7280;">
         </div>
         <div class="detail-section">
+          <label class="detail-label">서비스 종류 <span style="font-size:10px;color:#9ca3af;font-weight:400;">(복수 선택 가능)</span></label>
+          <div id="createServiceCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+        </div>
+        <div class="detail-section">
           <label class="detail-label">안건명</label>
           <input type="text" class="detail-input" id="detailName" value="" placeholder="안건명을 입력하세요" autofocus>
         </div>
@@ -6601,11 +6634,9 @@
             <option value="대기" selected>대기</option>
             <option value="진행">진행</option>
             <option value="완료">완료</option>
+            <option value="연기">연기</option>
+            <option value="Deprecated">Deprecated</option>
           </select>
-        </div>
-        <div class="detail-section">
-          <label class="detail-label">서비스 종류 <span style="font-size:10px;color:#9ca3af;font-weight:400;">(복수 선택 가능)</span></label>
-          <div id="createServiceCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
         </div>
         <div class="detail-section">
           <label class="detail-label">근거</label>
