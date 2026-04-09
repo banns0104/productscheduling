@@ -5261,15 +5261,18 @@
         renderMemberView(filtered, namesScroll, ganttBars);
       }
 
-      // name-row ↔ bar-row 높이 동기화 (서비스 태그 여러줄 대응)
+      // name-row ↔ bar-row 높이 동기화 (인덱스 기반, 양방향)
       requestAnimationFrame(function() {
+        var nameRows = namesScroll.querySelectorAll('.name-row');
         var barRows = ganttBars.querySelectorAll('.bar-row');
-        barRows.forEach(function(br) {
-          if (br._pairedNameRow) {
-            var h = br._pairedNameRow.offsetHeight;
-            if (h > 48) br.style.height = h + 'px';
-          }
-        });
+        var len = Math.min(nameRows.length, barRows.length);
+        for (var ri = 0; ri < len; ri++) {
+          var nh = nameRows[ri].offsetHeight;
+          var bh = barRows[ri].offsetHeight;
+          var maxH = Math.max(nh, bh);
+          if (nh < maxH) nameRows[ri].style.height = maxH + 'px';
+          if (bh < maxH) barRows[ri].style.height = maxH + 'px';
+        }
       });
     }
 
@@ -5441,7 +5444,7 @@
           const row = document.createElement('div');
           row.className = 'bar-row' + (rowIdx % 2 === 1 ? ' row-even' : '');
           row.id = `row-${project.id}`;
-          row._pairedNameRow = nameRow;
+          // row paired with nameRow by index
 
           // Render bars for each phase
           ['plan', 'design', 'front', 'back', 'qa'].forEach(phase => {
@@ -6009,27 +6012,33 @@
     function saveDetail() {
       pushUndo();
       if (!state.selectedProject) return;
-      state.selectedProject.name = document.getElementById('detailName').value;
-      // 인라인 편집 필드 우선, 없으면 하단 편집 필드
-      state.selectedProject.desc = (document.getElementById('detailDescInline') || document.getElementById('detailDesc')).value;
-      state.selectedProject.rationale = (document.getElementById('detailRationaleInline') || document.getElementById('detailRationale')).value;
-      state.selectedProject.tier = document.getElementById('detailTier').value;
-      state.selectedProject.deployDate = document.getElementById('detailDeployDate').value;
-      state.selectedProject.status = document.getElementById('detailStatus').value;
+      var p = state.selectedProject;
+      var pid = p.id;
+      // 변경 전 값 캡처
+      var oldName = p.name, oldTier = p.tier, oldDeploy = p.deployDate, oldStatus = p.status;
+      var oldScore = p.score, oldMemo = p.memo || '';
+
+      p.name = document.getElementById('detailName').value;
+      p.desc = (document.getElementById('detailDescInline') || document.getElementById('detailDesc')).value;
+      p.rationale = (document.getElementById('detailRationaleInline') || document.getElementById('detailRationale')).value;
+      p.tier = document.getElementById('detailTier').value;
+      p.deployDate = document.getElementById('detailDeployDate').value;
+      p.status = document.getElementById('detailStatus').value;
       // 점수 필드
       const impactEl = document.getElementById('detailImpact');
       if (impactEl) {
-        state.selectedProject.impact = parseInt(impactEl.value) || 0;
-        state.selectedProject.urgency = parseInt(document.getElementById('detailUrgency').value) || 0;
-        state.selectedProject.complexity = parseInt(document.getElementById('detailComplexity').value) || 0;
-        state.selectedProject.dependency = parseInt(document.getElementById('detailDependency').value) || 0;
-        state.selectedProject.score = Math.round(((state.selectedProject.impact + state.selectedProject.urgency + state.selectedProject.dependency) / 3 - state.selectedProject.complexity * 0.1) * 10) / 10;
+        p.impact = parseInt(impactEl.value) || 0;
+        p.urgency = parseInt(document.getElementById('detailUrgency').value) || 0;
+        p.complexity = parseInt(document.getElementById('detailComplexity').value) || 0;
+        p.dependency = parseInt(document.getElementById('detailDependency').value) || 0;
+        p.score = Math.round(((p.impact + p.urgency + p.dependency) / 3 - p.complexity * 0.1) * 10) / 10;
       }
-      state.selectedProject.memo = document.getElementById('detailMemo') ? document.getElementById('detailMemo').value : (state.selectedProject.memo || '');
+      p.memo = document.getElementById('detailMemo') ? document.getElementById('detailMemo').value : (p.memo || '');
       // Save links
+      var oldLinkCount = (p.links || []).length;
       const linkTypes = document.querySelectorAll('.link-type-select');
       const linkUrls = document.querySelectorAll('.link-url-input');
-      state.selectedProject.links = [];
+      p.links = [];
       linkTypes.forEach((sel, i) => {
         const url = linkUrls[i].value.trim();
         if (url) {
@@ -6038,11 +6047,18 @@
             const customInput = sel.parentElement.querySelector('.link-custom-type');
             type = customInput ? customInput.value.trim() || '기타' : '기타';
           }
-          state.selectedProject.links.push({ type, url });
+          p.links.push({ type, url });
         }
       });
-      pushHistory('edit', state.selectedProject.id, '링크', null, state.selectedProject.links.length + '개');
-      // Save service types (already updated via addServiceTag/removeServiceTag)
+      // 변경 이력 기록
+      if (oldName !== p.name) pushHistory('수정', pid, '이름', oldName, p.name);
+      if (oldTier !== p.tier) pushHistory('수정', pid, '티어', oldTier, p.tier);
+      if (oldDeploy !== p.deployDate) pushHistory('수정', pid, '배포일', oldDeploy || '미설정', p.deployDate || '미설정');
+      if (oldStatus !== p.status) pushHistory('수정', pid, '상태', oldStatus, p.status);
+      if (oldScore !== p.score) pushHistory('수정', pid, '점수', oldScore, p.score);
+      if (oldMemo !== p.memo) pushHistory('수정', pid, '메모', '', '변경됨');
+      if (oldLinkCount !== p.links.length) pushHistory('수정', pid, '링크', oldLinkCount + '개', p.links.length + '개');
+      // Save service types (already updated via checkbox)
       saveProjects();
       _showToast('저장되었습니다');
       renderGantt();
@@ -6223,6 +6239,7 @@
     function deleteProject() {
       if (!state.selectedProject) return;
       if (!confirm(`${state.selectedProject.name}을 삭제하시겠습니까?`)) return;
+      pushHistory('삭제', state.selectedProject.id, '안건', state.selectedProject.name, null);
       state.projects = state.projects.filter(p => p.id !== state.selectedProject.id);
       saveProjects();
       closeDetailPanel();
@@ -6270,12 +6287,27 @@
       const project = state.projects.find(p => p.id === projectId);
       if (!project) return;
 
+      var oldStart = (project.phases[phase] && project.phases[phase].start) || '';
+      var oldEnd = (project.phases[phase] && project.phases[phase].end) || '';
+      var oldAssignees = (project.assignments[phase] || []).slice();
+
       if (!project.phases[phase]) project.phases[phase] = {};
-      project.phases[phase].start = document.getElementById('editStartDate').value;
-      project.phases[phase].end = document.getElementById('editEndDate').value;
+      var newStart = document.getElementById('editStartDate').value;
+      var newEnd = document.getElementById('editEndDate').value;
+      project.phases[phase].start = newStart;
+      project.phases[phase].end = newEnd;
 
       const checkedBoxes = document.querySelectorAll('.edit-assignee-cb:checked');
-      project.assignments[phase] = Array.from(checkedBoxes).map(cb => cb.value);
+      var newAssignees = Array.from(checkedBoxes).map(cb => cb.value);
+      project.assignments[phase] = newAssignees;
+
+      var phaseLabel = PHASE_LABELS[phase] || phase;
+      if (oldStart !== newStart || oldEnd !== newEnd) {
+        pushHistory('수정', projectId, phaseLabel + ' 일정', oldStart + '~' + oldEnd, newStart + '~' + newEnd);
+      }
+      if (oldAssignees.join(',') !== newAssignees.join(',')) {
+        pushHistory('수정', projectId, phaseLabel + ' 담당자', oldAssignees.join(','), newAssignees.join(','));
+      }
 
       saveProjects();
       closeEditModal();
@@ -6371,18 +6403,32 @@
       const endVal = document.getElementById('inlineEndDate').value;
       if (!startVal || !endVal) { _showToast('날짜를 입력해주세요'); return; }
 
+      var phaseLabel = PHASE_LABELS[_inlineState.phase] || _inlineState.phase;
+      var oldStart = (project.phases[_inlineState.phase] && project.phases[_inlineState.phase].start) || '';
+      var oldEnd = (project.phases[_inlineState.phase] && project.phases[_inlineState.phase].end) || '';
+
       if (!project.phases[_inlineState.phase]) project.phases[_inlineState.phase] = {};
       project.phases[_inlineState.phase].start = startVal;
       project.phases[_inlineState.phase].end = endVal;
 
       const checkedBoxes = document.querySelectorAll('.inline-assignee-cb:checked');
-      project.assignments[_inlineState.phase] = Array.from(checkedBoxes).map(cb => cb.value);
+      var newAssignees = Array.from(checkedBoxes).map(cb => cb.value);
+      project.assignments[_inlineState.phase] = newAssignees;
+
+      if (!oldStart && !oldEnd) {
+        pushHistory('추가', _inlineState.projectId, phaseLabel + ' 스케줄', '', startVal + '~' + endVal);
+      } else {
+        pushHistory('수정', _inlineState.projectId, phaseLabel + ' 스케줄', oldStart + '~' + oldEnd, startVal + '~' + endVal);
+      }
+      if (newAssignees.length > 0) {
+        pushHistory('추가', _inlineState.projectId, phaseLabel + ' 담당자', '', newAssignees.join(','));
+      }
 
       saveProjects();
       closeInlineSchedule();
       renderGantt();
       if (state.currentTab === 'projects') renderProjects();
-      _showToast(PHASE_LABELS[_inlineState.phase] + ' 스케줄이 등록되었습니다');
+      _showToast(phaseLabel + ' 스케줄이 등록되었습니다');
     }
 
     // 프로젝트 정렬 상태
@@ -6710,7 +6756,9 @@
       td.appendChild(input);
       input.focus();
 
+      var oldDeploy = project.deployDate || '';
       const save = () => {
+        if (oldDeploy !== input.value) pushHistory('수정', projectId, '배포일', oldDeploy || '미설정', input.value || '미설정');
         project.deployDate = input.value;
         saveProjects();
         renderProjects();
@@ -6735,7 +6783,9 @@
       td.appendChild(sel);
       sel.focus();
 
+      var oldStatus = project.status;
       const save = () => {
+        if (oldStatus !== sel.value) pushHistory('수정', projectId, '상태', oldStatus, sel.value);
         project.status = sel.value;
         saveProjects();
         renderProjects();
@@ -6946,6 +6996,7 @@
 
       state.projects.push(state.selectedProject);
       state.isCreating = false;
+      pushHistory('생성', state.selectedProject.id, '안건', null, state.selectedProject.name);
       saveProjects();
       closeDetailPanel();
       restoreDetailActions();
@@ -7079,15 +7130,10 @@
         if ((e.ctrlKey || e.metaKey) && e.key === 'e') { e.preventDefault(); exportCSV(); return; }
         // ESC
         if (e.key === 'Escape') {
-          // 채팅 패널이 열려있으면 먼저 닫기 (방 내부면 방 리스트로, 아니면 패널 닫기)
+          // 채팅 패널이 열려있으면 닫기
           var chatPanel = document.getElementById('chatPanel');
           if (chatPanel && chatPanel.classList.contains('open')) {
-            var roomView = document.getElementById('projectRoomView');
-            if (roomView && roomView.style.display === 'flex' && state.currentChatTab === 'project') {
-              backToRoomList();
-            } else {
-              toggleChatPanel();
-            }
+            toggleChatPanel();
             return;
           }
           const inlinePopup = document.getElementById('inlineSchedulePopup');
