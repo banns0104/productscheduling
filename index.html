@@ -1754,6 +1754,10 @@
       }
     }
   </style>
+  <!-- Firebase SDK (정적 로딩) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
   <!-- Login Overlay -->
@@ -3249,47 +3253,37 @@
       if (el) { el.textContent = text; el.style.background = bg; el.style.color = color; }
     }
 
-    // Firebase를 페이지 렌더 완료 후 비동기로 로드 (절대 페이지를 막지 않음)
+    // Firebase 초기화 (SDK는 head에서 정적 로딩됨)
     function _bootFirebase() {
-      var s1 = document.createElement('script');
-      s1.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
-      s1.onerror = function() { _updateSync('로컬 모드', '#fef3c7', '#d97706'); showLoginError('Firebase SDK 로드 실패. 네트워크를 확인해주세요.'); };
-      s1.onload = function() {
-        var s2 = document.createElement('script');
-        s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
-        s2.onerror = function() { _updateSync('로컬 모드', '#fef3c7', '#d97706'); showLoginError('Firebase Auth 로드 실패.'); };
-        s2.onload = function() {
-          var s3 = document.createElement('script');
-          s3.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
-          s3.onerror = function() { _updateSync('로컬 모드', '#fef3c7', '#d97706'); showLoginError('Firebase DB 로드 실패.'); };
-          s3.onload = function() {
-            try {
-              firebase.initializeApp({
-                apiKey: "AIzaSyBzH0D97lVbRy1enpfwpe_BGmhToj-f4_w",
-                authDomain: "product-scheduling.firebaseapp.com",
-                databaseURL: "https://product-scheduling-default-rtdb.asia-southeast1.firebasedatabase.app",
-                projectId: "product-scheduling",
-                storageBucket: "product-scheduling.firebasestorage.app",
-                messagingSenderId: "964218421788",
-                appId: "1:964218421788:web:5909fce52b6d4e6d4855d9"
-              });
-              _fb.db = firebase.database();
-              _fb.ref = _fb.db.ref('projects');
-              _fb.auth = firebase.auth();
-              _fb.available = true;
-              _startFirebaseSync();
-              _initAuthCheck();
-            } catch(e) {
-              console.error('Firebase init fail:', e);
-              _updateSync('로컬 모드', '#fef3c7', '#d97706');
-              _initAuthCheck();
-            }
-          };
-          document.head.appendChild(s3);
-        };
-        document.head.appendChild(s2);
-      };
-      document.head.appendChild(s1);
+      if (typeof firebase === 'undefined') {
+        console.error('Firebase SDK not loaded');
+        _updateSync('로컬 모드', '#fef3c7', '#d97706');
+        showLoginError('Firebase SDK 로드 실패. 네트워크를 확인 후 새로고침 해주세요.');
+        _initAuthCheck();
+        return;
+      }
+      try {
+        firebase.initializeApp({
+          apiKey: "AIzaSyBzH0D97lVbRy1enpfwpe_BGmhToj-f4_w",
+          authDomain: "product-scheduling.firebaseapp.com",
+          databaseURL: "https://product-scheduling-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "product-scheduling",
+          storageBucket: "product-scheduling.firebasestorage.app",
+          messagingSenderId: "964218421788",
+          appId: "1:964218421788:web:5909fce52b6d4e6d4855d9"
+        });
+        _fb.db = firebase.database();
+        _fb.ref = _fb.db.ref('projects');
+        _fb.auth = firebase.auth();
+        _fb.available = true;
+        console.log('Firebase initialized OK');
+        _startFirebaseSync();
+        _initAuthCheck();
+      } catch(e) {
+        console.error('Firebase init fail:', e);
+        _updateSync('로컬 모드', '#fef3c7', '#d97706');
+        _initAuthCheck();
+      }
     }
 
     function _startFirebaseSync() {
@@ -6790,8 +6784,8 @@
       // 1단계: 즉시 데이터 로드 및 렌더 (Firebase 무관하게 화면 먼저 표시)
       initProjects();
 
-      // 2단계: 렌더 끝난 후 Firebase 비동기 연결 (화면 안 막음)
-      setTimeout(_bootFirebase, 300);
+      // 2단계: Firebase 초기화 (SDK는 head에서 이미 로딩됨)
+      _bootFirebase();
 
       // Tabs
       document.querySelectorAll('.tab').forEach(tab => {
