@@ -1025,7 +1025,7 @@
       bottom: 0;
       width: 100vw;
       height: 100vh;
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      background: #ffffff;
       z-index: 9999;
       justify-content: center;
       align-items: center;
@@ -1037,48 +1037,82 @@
     }
 
     .login-card {
-      background: white;
-      border-radius: 12px;
-      padding: 48px 40px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 56px 44px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       text-align: center;
     }
 
     .login-logo {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 700;
-      color: #6366f1;
-      margin-bottom: 8px;
+      color: #1e3a5f;
+      margin-bottom: 6px;
       letter-spacing: -0.5px;
     }
 
     .login-subtitle {
-      font-size: 13px;
-      color: #9ca3af;
-      margin-bottom: 32px;
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 40px;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+    }
+
+    .login-divider {
+      display: flex;
+      align-items: center;
+      margin-bottom: 28px;
+      gap: 12px;
+    }
+    .login-divider::before, .login-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e7eb;
+    }
+    .login-divider span {
+      font-size: 12px;
+      color: #94a3b8;
+      white-space: nowrap;
     }
 
     .login-btn {
       width: 100%;
-      padding: 12px 16px;
-      background: #6366f1;
-      color: white;
-      border: none;
-      border-radius: 8px;
+      padding: 14px 20px;
+      background: #ffffff;
+      color: #374151;
+      border: 1.5px solid #d1d5db;
+      border-radius: 10px;
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .login-btn:hover {
-      background: #4f46e5;
+      background: #f8fafc;
+      border-color: #2563eb;
+      box-shadow: 0 2px 12px rgba(37, 99, 235, 0.1);
+    }
+
+    .login-footer {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    .login-footer span {
+      color: #2563eb;
+      font-weight: 500;
     }
 
     .login-error {
@@ -1086,8 +1120,9 @@
       font-size: 13px;
       margin-top: 16px;
       padding: 12px;
-      background: #fee2e2;
-      border-radius: 6px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
       display: none;
     }
 
@@ -1275,6 +1310,103 @@
       text-align: center;
       font-size: 13px;
     }
+
+    /* Chat notification badge */
+    .chat-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      background: #dc2626;
+      color: white;
+      border-radius: 9px;
+      font-size: 10px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      line-height: 18px;
+      border: 2px solid white;
+    }
+    .chat-badge.show { display: flex; }
+
+    /* Mention badge — orange pulse instead of red dot */
+    .chat-badge.mention {
+      background: #f97316;
+      animation: mentionPulse 1s ease-in-out infinite;
+    }
+    @keyframes mentionPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(249, 115, 22, 0); }
+    }
+
+    /* @mention highlight in chat bubble */
+    .chat-mention {
+      color: #2563eb;
+      font-weight: 700;
+      background: rgba(37, 99, 235, 0.08);
+      padding: 1px 3px;
+      border-radius: 3px;
+    }
+    .chat-message.own .chat-bubble .chat-mention {
+      color: #bfdbfe;
+      background: rgba(255,255,255,0.15);
+    }
+
+    /* Mention message highlight border */
+    .chat-message.mentioned .chat-bubble {
+      border: 1.5px solid #f97316;
+      background: #fff7ed;
+    }
+    .chat-message.mentioned.own .chat-bubble {
+      border-color: #fdba74;
+      background: #6366f1;
+    }
+
+    /* Mention autocomplete dropdown */
+    .mention-autocomplete {
+      position: absolute;
+      bottom: 100%;
+      left: 16px;
+      right: 16px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 100;
+    }
+    .mention-autocomplete.show { display: block; }
+    .mention-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      transition: background 0.1s;
+    }
+    .mention-item:hover, .mention-item.selected {
+      background: #eff6ff;
+    }
+    .mention-item-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .mention-item-name { font-weight: 600; color: #1f2937; }
+    .mention-item-role { color: #9ca3af; font-size: 11px; margin-left: auto; }
 
     .chat-project-selector {
       padding: 12px;
@@ -1535,17 +1667,27 @@
   <!-- Login Overlay -->
   <div class="login-overlay" id="loginOverlay">
     <div class="login-card">
-      <div class="login-logo">AboutFishing</div>
-      <div class="login-subtitle">스케줄 대시보드</div>
-      <button class="login-btn" id="googleLoginBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M12 6v6m0 0v6"></path>
-          <path d="M6 12h6m0 0h6"></path>
+      <div style="margin-bottom: 8px;">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="10" fill="#2563eb" fill-opacity="0.08"/>
+          <path d="M12 20h16M20 12v16" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="8" stroke="#2563eb" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
         </svg>
-        구글 계정으로 로그인
+      </div>
+      <div class="login-logo">AboutFishing</div>
+      <div class="login-subtitle">Project Scheduling Dashboard</div>
+      <div class="login-divider"><span>@aboutfishing.kr 계정으로 로그인</span></div>
+      <button class="login-btn" id="googleLoginBtn">
+        <svg width="20" height="20" viewBox="0 0 48 48">
+          <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59A14.5 14.5 0 019.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.99 23.99 0 000 24c0 3.77.87 7.35 2.56 10.78l7.97-6.19z"/>
+          <path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Google 계정으로 로그인
       </button>
       <div class="login-error" id="loginError"></div>
+      <div class="login-footer">Powered by <span>AboutFishing</span> Team</div>
     </div>
   </div>
 
@@ -1578,7 +1720,7 @@
               <option value="">전체 멤버</option>
             </select>
           </div>
-          <button class="btn btn-secondary" id="chatToggleBtn" title="채팅" onclick="toggleChatPanel()" style="font-size:16px;padding:6px 10px;display:none;">💬</button>
+          <button class="btn btn-secondary" id="chatToggleBtn" title="채팅" onclick="toggleChatPanel()" style="font-size:16px;padding:6px 10px;display:none;position:relative;">💬<span class="chat-badge" id="chatBadge">0</span></button>
           <div class="user-header-info" id="userHeaderInfo" style="display:none;">
             <div class="user-avatar-small" id="userAvatarSmall"></div>
             <div style="display:flex;flex-direction:column;gap:2px;">
@@ -1649,6 +1791,18 @@
 
       <!-- Tab 2: Projects -->
       <div class="tab-content" id="projects">
+        <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;">
+          <span style="font-size:12px;color:#6b7280;font-weight:500;">정렬:</span>
+          <select id="projectSortSelect" onchange="sortProjects(this.value)" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;background:white;cursor:pointer;">
+            <option value="tier">티어순</option>
+            <option value="name">이름순</option>
+            <option value="deadline">일정 임박순</option>
+            <option value="score">점수순</option>
+            <option value="status">상태순</option>
+            <option value="deploy">배포일순</option>
+          </select>
+          <button class="btn btn-secondary" onclick="createNewProject()" style="margin-left:auto;font-size:12px;padding:4px 12px;">+ 안건 추가</button>
+        </div>
         <div class="table-container">
           <table>
             <thead>
@@ -1709,26 +1863,32 @@
       <!-- Global Chat Tab -->
       <div class="chat-tab-pane active" id="globalChatTab">
         <div class="chat-messages" id="globalChatMessages"></div>
-        <div class="chat-input-area" id="globalChatInput" style="display:none;">
-          <input type="text" class="chat-input" id="globalChatText" placeholder="메시지 입력..." onkeypress="if(event.key==='Enter') sendChatMessage('global')">
-          <button class="chat-send-btn" onclick="sendChatMessage('global')">전송</button>
+        <div style="position:relative;">
+          <div class="mention-autocomplete" id="globalMentionAC"></div>
+          <div class="chat-input-area" id="globalChatInput" style="display:none;">
+            <input type="text" class="chat-input" id="globalChatText" placeholder="@멘션 또는 메시지 입력..." oninput="handleMentionInput(this,'globalMentionAC')" onkeydown="handleMentionKey(event,this,'global','globalMentionAC')" onkeypress="if(event.key==='Enter'&&!document.getElementById('globalMentionAC').classList.contains('show')) sendChatMessage('global')">
+            <button class="chat-send-btn" onclick="sendChatMessage('global')">전송</button>
+          </div>
         </div>
-        <div class="chat-disabled" id="globalChatDisabled" style="display:none;">로그인 후 이용 가능합니다</div>
+        <div class="chat-disabled" id="globalChatDisabled" style="text-align:center;padding:40px 20px;color:#9ca3af;font-size:13px;">로그인 후 이용 가능합니다</div>
       </div>
       <!-- Project Chat Tab -->
       <div class="chat-tab-pane" id="projectChatTab">
         <div class="chat-project-selector">
-          <select id="projectChatSelect" onchange="switchProject(this.value)" style="display:none;">
+          <select id="projectChatSelect" onchange="switchProject(this.value)" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;">
             <option value="">프로젝트 선택...</option>
           </select>
           <div id="projectSelectDisabled" style="display:none;color:#6b7280;font-size:12px;">프로젝트를 선택하세요</div>
         </div>
         <div class="chat-messages" id="projectChatMessages"></div>
-        <div class="chat-input-area" id="projectChatInput" style="display:none;">
-          <input type="text" class="chat-input" id="projectChatText" placeholder="메시지 입력..." onkeypress="if(event.key==='Enter') sendChatMessage('project')">
-          <button class="chat-send-btn" onclick="sendChatMessage('project')">전송</button>
+        <div style="position:relative;">
+          <div class="mention-autocomplete" id="projectMentionAC"></div>
+          <div class="chat-input-area" id="projectChatInput" style="display:none;">
+            <input type="text" class="chat-input" id="projectChatText" placeholder="@멘션 또는 메시지 입력..." oninput="handleMentionInput(this,'projectMentionAC')" onkeydown="handleMentionKey(event,this,'project','projectMentionAC')" onkeypress="if(event.key==='Enter'&&!document.getElementById('projectMentionAC').classList.contains('show')) sendChatMessage('project')">
+            <button class="chat-send-btn" onclick="sendChatMessage('project')">전송</button>
+          </div>
         </div>
-        <div class="chat-disabled" id="projectChatDisabled" style="display:none;">로그인 후 이용 가능합니다</div>
+        <div class="chat-disabled" id="projectChatDisabled" style="text-align:center;padding:40px 20px;color:#9ca3af;font-size:13px;">로그인 후 이용 가능합니다</div>
       </div>
     </div>
   </div>
@@ -1950,6 +2110,12 @@
 
     function hideLoginScreen() {
       document.getElementById('loginOverlay').classList.add('hidden');
+      // 채팅 버튼 항상 표시
+      document.getElementById('chatToggleBtn').style.display = 'inline-block';
+      // 브라우저 알림 권한 요청
+      requestNotificationPermission();
+      // 채팅 시스템 초기화 (로컬 모드 포함)
+      setTimeout(initChatSystem, 500);
     }
 
     function showLoginError(msg) {
@@ -2005,10 +2171,20 @@
 
     /* ========== CHAT SYSTEM ========== */
     function initChatSystem() {
-      if (!state.currentUser || !_fb.db) return;
       populateChatProjectSelector();
-      loadGlobalChatMessages();
-      updateChatInputVisibility();
+      document.getElementById('projectChatSelect').style.display = 'block';
+      if (state.currentUser && _fb.db) {
+        loadGlobalChatMessages();
+        updateChatInputVisibility();
+      } else {
+        // 로컬 모드: UI는 보여주되 전송 불가 안내
+        document.getElementById('globalChatDisabled').style.display = 'block';
+        document.getElementById('globalChatDisabled').textContent = '로컬 모드에서는 채팅을 사용할 수 없습니다. 배포 후 Google 로그인하면 이용 가능합니다.';
+        document.getElementById('globalChatInput').style.display = 'none';
+        document.getElementById('projectChatDisabled').style.display = 'block';
+        document.getElementById('projectChatDisabled').textContent = '로컬 모드에서는 채팅을 사용할 수 없습니다.';
+        document.getElementById('projectChatInput').style.display = 'none';
+      }
     }
 
     function populateChatProjectSelector() {
@@ -2026,13 +2202,15 @@
       state.currentChatTab = tab;
       document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.chat-tab-pane').forEach(p => p.classList.remove('active'));
-      event.target.classList.add('active');
+      // Activate correct tab button
+      const tabBtns = document.querySelectorAll('.chat-tab');
+      tabBtns.forEach(t => { if ((tab === 'global' && t.textContent.includes('전체')) || (tab === 'project' && t.textContent.includes('프로젝트'))) t.classList.add('active'); });
       if (tab === 'global') {
         document.getElementById('globalChatTab').classList.add('active');
-        loadGlobalChatMessages();
+        if (state.currentUser && _fb.db) loadGlobalChatMessages();
       } else {
         document.getElementById('projectChatTab').classList.add('active');
-        if (state.selectedProjectChat) {
+        if (state.selectedProjectChat && state.currentUser && _fb.db) {
           loadProjectChatMessages(state.selectedProjectChat);
         }
       }
@@ -2046,7 +2224,11 @@
     }
 
     function toggleChatPanel() {
-      document.getElementById('chatPanel').classList.toggle('open');
+      const panel = document.getElementById('chatPanel');
+      panel.classList.toggle('open');
+      if (panel.classList.contains('open')) {
+        clearChatBadge();
+      }
     }
 
     // Chat pagination state
@@ -2081,7 +2263,10 @@
       const liveRef = _fb.db.ref('chats/global').orderByChild('timestamp').startAt(Date.now());
       const listener = liveRef.on('child_added', function(snap) {
         const msg = snap.val();
-        if (msg) appendChatMessage(msg, 'globalChatMessages');
+        if (msg) {
+          appendChatMessage(msg, 'globalChatMessages');
+          handleNewChatMessage(msg);
+        }
       });
       state.chatListeners['global'] = function() { liveRef.off('child_added', listener); };
 
@@ -2132,7 +2317,10 @@
       const liveRef = _fb.db.ref(path).orderByChild('timestamp').startAt(Date.now());
       const listener = liveRef.on('child_added', function(snap) {
         const msg = snap.val();
-        if (msg) appendChatMessage(msg, 'projectChatMessages');
+        if (msg) {
+          appendChatMessage(msg, 'projectChatMessages');
+          handleNewChatMessage(msg);
+        }
       });
       state.chatListeners['project'] = function() { liveRef.off('child_added', listener); };
 
@@ -2158,11 +2346,13 @@
     function prependChatMessage(msg, containerId) {
       const container = document.getElementById(containerId);
       const isOwn = state.currentUser && msg.uid === state.currentUser.uid;
+      const isMentioned = checkMentionInMessage(msg.text);
       const msgEl = document.createElement('div');
-      msgEl.className = 'chat-message' + (isOwn ? ' own' : '');
+      msgEl.className = 'chat-message' + (isOwn ? ' own' : '') + (isMentioned ? ' mentioned' : '');
       const avatar = document.createElement('div');
       avatar.className = 'chat-avatar';
-      avatar.style.background = '#6366f1';
+      const memberMatch = TEAM.find(function(t) { return msg.displayName && msg.displayName.includes(t.name); });
+      avatar.style.background = memberMatch ? memberMatch.color : '#6366f1';
       if (msg.photoURL) {
         avatar.innerHTML = '<img src="' + msg.photoURL + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
       } else {
@@ -2170,7 +2360,7 @@
       }
       const bubble = document.createElement('div');
       bubble.className = 'chat-bubble';
-      bubble.textContent = msg.text;
+      bubble.innerHTML = renderChatBubbleHTML(msg.text || '');
       const info = document.createElement('div');
       info.className = 'chat-info';
       const sender = document.createElement('div');
@@ -2190,29 +2380,31 @@
 
     function appendChatMessage(msg, containerId) {
       const container = document.getElementById(containerId);
-      const isOwn = msg.uid === state.currentUser.uid;
+      const isOwn = state.currentUser && msg.uid === state.currentUser.uid;
+      const isMentioned = checkMentionInMessage(msg.text);
 
       const msgEl = document.createElement('div');
-      msgEl.className = 'chat-message' + (isOwn ? ' own' : '');
+      msgEl.className = 'chat-message' + (isOwn ? ' own' : '') + (isMentioned ? ' mentioned' : '');
 
       const avatar = document.createElement('div');
       avatar.className = 'chat-avatar';
-      avatar.style.background = '#6366f1';
+      const memberMatch = TEAM.find(function(t) { return msg.displayName && msg.displayName.includes(t.name); });
+      avatar.style.background = memberMatch ? memberMatch.color : '#6366f1';
       if (msg.photoURL) {
         avatar.innerHTML = '<img src="' + msg.photoURL + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
       } else {
-        avatar.textContent = msg.displayName.charAt(0);
+        avatar.textContent = (msg.displayName || '?').charAt(0);
       }
 
       const bubble = document.createElement('div');
       bubble.className = 'chat-bubble';
-      bubble.textContent = msg.text;
+      bubble.innerHTML = renderChatBubbleHTML(msg.text || '');
 
       const info = document.createElement('div');
       info.className = 'chat-info';
       const sender = document.createElement('div');
       sender.className = 'chat-sender';
-      sender.textContent = msg.displayName;
+      sender.textContent = msg.displayName || '';
       const time = document.createElement('div');
       time.className = 'chat-time';
       const msgDate = new Date(msg.timestamp);
@@ -2242,12 +2434,23 @@
         path = 'chats/project/' + state.selectedProjectChat;
       }
 
+      // Extract mentioned names
+      const mentions = [];
+      const mentionRegex = /@([\uAC00-\uD7A3a-zA-Z_]+)/g;
+      let mentionMatch;
+      while ((mentionMatch = mentionRegex.exec(text)) !== null) {
+        const mName = mentionMatch[1];
+        const mMember = TEAM.find(function(t) { return t.name === mName; });
+        if (mMember) mentions.push(mMember.name);
+      }
+
       const msg = {
         uid: state.currentUser.uid,
         email: state.currentUser.email,
         displayName: state.currentUser.displayName,
         photoURL: state.currentUser.photoURL,
         text: text,
+        mentions: mentions.length > 0 ? mentions : null,
         timestamp: firebase.database.ServerValue.TIMESTAMP
       };
 
@@ -2267,6 +2470,175 @@
         document.getElementById('projectChatDisabled').style.display = 'block';
         document.getElementById('projectChatInput').style.display = 'none';
       }
+    }
+
+    /* ========== CHAT NOTIFICATION & MENTION SYSTEM ========== */
+    const _chatNotif = { unreadCount: 0, hasMention: false, lastReadTimestamp: 0, initialized: false };
+
+    function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    function showBrowserNotification(title, body, tag) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          const notif = new Notification(title, { body: body, icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="12" fill="%232563eb"/><text x="50%" y="55%" text-anchor="middle" fill="white" font-size="32" font-weight="bold" dominant-baseline="middle">AF</text></svg>', tag: tag || 'af-chat-' + Date.now(), requireInteraction: false });
+          notif.onclick = function() { window.focus(); document.getElementById('chatPanel').classList.add('open'); notif.close(); };
+          setTimeout(function() { notif.close(); }, 5000);
+        } catch(e) { console.log('Notification error:', e); }
+      }
+    }
+
+    function updateChatBadge() {
+      const badge = document.getElementById('chatBadge');
+      if (!badge) return;
+      if (_chatNotif.unreadCount > 0) {
+        badge.textContent = _chatNotif.unreadCount > 99 ? '99+' : _chatNotif.unreadCount;
+        badge.classList.add('show');
+        if (_chatNotif.hasMention) {
+          badge.classList.add('mention');
+        } else {
+          badge.classList.remove('mention');
+        }
+      } else {
+        badge.classList.remove('show', 'mention');
+        _chatNotif.hasMention = false;
+      }
+    }
+
+    function clearChatBadge() {
+      _chatNotif.unreadCount = 0;
+      _chatNotif.hasMention = false;
+      _chatNotif.lastReadTimestamp = Date.now();
+      updateChatBadge();
+    }
+
+    function checkMentionInMessage(text) {
+      if (!state.currentUser) return false;
+      // Match @name patterns against current user's display name
+      const userName = state.currentUser.displayName || '';
+      if (!userName) return false;
+      // Check for @fullname or partial
+      const mentionRegex = /@([\uAC00-\uD7A3a-zA-Z_]+)/g;
+      let match;
+      while ((match = mentionRegex.exec(text)) !== null) {
+        const mentioned = match[1];
+        if (userName.includes(mentioned) || mentioned === userName) return true;
+        // Also check by team member matching
+        const me = TEAM.find(function(t) { return t.name === userName; });
+        if (me && me.name.includes(mentioned)) return true;
+      }
+      return false;
+    }
+
+    function handleNewChatMessage(msg) {
+      // Skip own messages
+      if (state.currentUser && msg.uid === state.currentUser.uid) return;
+      // Skip if chat panel is open and visible
+      const chatPanel = document.getElementById('chatPanel');
+      const isChatOpen = chatPanel && chatPanel.classList.contains('open');
+
+      if (!isChatOpen) {
+        _chatNotif.unreadCount++;
+        const isMentioned = checkMentionInMessage(msg.text);
+        if (isMentioned) _chatNotif.hasMention = true;
+        updateChatBadge();
+
+        // Browser push notification
+        if (isMentioned) {
+          showBrowserNotification('💬 ' + (msg.displayName || '알 수 없음') + '님이 회원님을 멘션했습니다', msg.text, 'af-mention-' + Date.now());
+        } else {
+          showBrowserNotification('💬 ' + (msg.displayName || '새 메시지'), msg.text, 'af-chat-' + Date.now());
+        }
+      }
+    }
+
+    function renderChatBubbleHTML(text) {
+      // Parse @mentions and render as highlighted spans
+      const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return escaped.replace(/@([\uAC00-\uD7A3a-zA-Z_]+)/g, function(full, name) {
+        const member = TEAM.find(function(t) { return t.name === name; });
+        if (member) return '<span class="chat-mention">@' + name + '</span>';
+        return full;
+      });
+    }
+
+    // @Mention autocomplete
+    let _mentionState = { active: false, startPos: 0, query: '', selectedIndex: 0 };
+
+    function handleMentionInput(inputEl, acId) {
+      const val = inputEl.value;
+      const cursorPos = inputEl.selectionStart;
+      const ac = document.getElementById(acId);
+
+      // Find @ before cursor
+      let atPos = -1;
+      for (let i = cursorPos - 1; i >= 0; i--) {
+        if (val[i] === '@') { atPos = i; break; }
+        if (val[i] === ' ' && i < cursorPos - 1) break;
+      }
+
+      if (atPos >= 0) {
+        const query = val.substring(atPos + 1, cursorPos).toLowerCase();
+        _mentionState = { active: true, startPos: atPos, query: query, selectedIndex: 0 };
+        const filtered = TEAM.filter(function(t) {
+          return t.name.toLowerCase().includes(query) || t.role.toLowerCase().includes(query);
+        });
+        if (filtered.length > 0) {
+          ac.innerHTML = '';
+          filtered.forEach(function(t, idx) {
+            const item = document.createElement('div');
+            item.className = 'mention-item' + (idx === 0 ? ' selected' : '');
+            item.innerHTML = '<div class="mention-item-avatar" style="background:' + t.color + '">' + t.name.charAt(0) + '</div><span class="mention-item-name">' + t.name + '</span><span class="mention-item-role">' + t.role + '</span>';
+            item.onclick = function() { insertMention(inputEl, acId, t.name); };
+            ac.appendChild(item);
+          });
+          ac.classList.add('show');
+          return;
+        }
+      }
+      _mentionState.active = false;
+      ac.classList.remove('show');
+    }
+
+    function handleMentionKey(event, inputEl, type, acId) {
+      const ac = document.getElementById(acId);
+      if (!ac.classList.contains('show')) return;
+      const items = ac.querySelectorAll('.mention-item');
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        _mentionState.selectedIndex = Math.min(_mentionState.selectedIndex + 1, items.length - 1);
+        items.forEach(function(el, i) { el.classList.toggle('selected', i === _mentionState.selectedIndex); });
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        _mentionState.selectedIndex = Math.max(_mentionState.selectedIndex - 1, 0);
+        items.forEach(function(el, i) { el.classList.toggle('selected', i === _mentionState.selectedIndex); });
+      } else if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        event.stopPropagation();
+        const selected = items[_mentionState.selectedIndex];
+        if (selected) {
+          const name = selected.querySelector('.mention-item-name').textContent;
+          insertMention(inputEl, acId, name);
+        }
+      } else if (event.key === 'Escape') {
+        ac.classList.remove('show');
+        _mentionState.active = false;
+      }
+    }
+
+    function insertMention(inputEl, acId, name) {
+      const val = inputEl.value;
+      const before = val.substring(0, _mentionState.startPos);
+      const after = val.substring(inputEl.selectionStart);
+      inputEl.value = before + '@' + name + ' ' + after;
+      inputEl.focus();
+      const newPos = _mentionState.startPos + name.length + 2;
+      inputEl.setSelectionRange(newPos, newPos);
+      document.getElementById(acId).classList.remove('show');
+      _mentionState.active = false;
     }
 
     /* ========== UTILITY FUNCTIONS ========== */
@@ -2337,8 +2709,10 @@
 
     function openMemberManagement() {
       if (!state.adminMode) { alert('관리자 모드에서만 사용 가능합니다.'); return; }
+      const existing = document.getElementById('memberMgmtOverlay');
+      if (existing) existing.remove();
       const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay';
+      overlay.className = 'modal-overlay show';
       overlay.id = 'memberMgmtOverlay';
       overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
       const modal = document.createElement('div');
@@ -2369,7 +2743,6 @@
     function addNewMember() {
       const newId = 'member_' + Date.now();
       TEAM.push({ id: newId, name: '새 팀원', role: '역할', color: '#6b7280' });
-      openMemberManagement();
       document.getElementById('memberMgmtOverlay')?.remove();
       openMemberManagement();
     }
@@ -4404,13 +4777,58 @@
 
         // Projects in tier
         projects.forEach(project => {
-          const shortName = truncateName(project.name, 35);
+          const shortName = truncateName(project.name, 30);
+          // 프로젝트의 전체 시작일/종료일 계산 (모든 phase에서)
+          let projStart = null, projEnd = null;
+          ['plan','design','front','back','qa'].forEach(function(ph) {
+            const pd = project.phases[ph];
+            if (pd && pd.start) { const d = parseLocalDate(pd.start); if (!projStart || d < projStart) projStart = d; }
+            if (pd && pd.end) { const d = parseLocalDate(pd.end); if (!projEnd || d > projEnd) projEnd = d; }
+          });
+          const startStr = projStart ? (projStart.getMonth()+1) + '/' + projStart.getDate() : '-';
+          const endStr = projEnd ? (projEnd.getMonth()+1) + '/' + projEnd.getDate() : '-';
+          const deployStr = project.deployDate && project.deployDate !== '' && project.deployDate !== '지속' && project.deployDate !== '지속 병행' ? (function(){ var dd = parseLocalDate(project.deployDate); return dd ? (dd.getMonth()+1)+'/'+dd.getDate() : ''; })() : '';
+
           const nameRow = document.createElement('div');
           nameRow.className = 'name-row' + (rowIdx % 2 === 1 ? ' row-even' : '');
           nameRow.style.color = '#6366f1';
           nameRow.style.fontWeight = '500';
-          nameRow.innerHTML = '<span style="font-weight:600;flex-shrink:0;">' + project.id + '</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">' + shortName + '</span>' + (project.gmvImpact ? '<span class="gmv-badge">' + project.gmvImpact + '</span>' : '');
-          nameRow.onclick = () => openDetailPanel(project.id);
+          nameRow.style.flexDirection = 'column';
+          nameRow.style.alignItems = 'flex-start';
+          nameRow.style.gap = '2px';
+          nameRow.style.paddingTop = '4px';
+          nameRow.style.paddingBottom = '4px';
+
+          // 1행: 프로젝트 ID + 이름 + GMV
+          const topLine = document.createElement('div');
+          topLine.style.cssText = 'display:flex;align-items:center;gap:4px;width:100%;';
+          topLine.innerHTML = '<span style="font-weight:600;flex-shrink:0;font-size:12px;">' + project.id + '</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;">' + shortName + '</span>' + (project.gmvImpact ? '<span class="gmv-badge" style="font-size:9px;">' + project.gmvImpact + '</span>' : '');
+          topLine.onclick = function() { openDetailPanel(project.id); };
+          topLine.style.cursor = 'pointer';
+
+          // 2행: 날짜 + 배포일 + 채팅버튼
+          const bottomLine = document.createElement('div');
+          bottomLine.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%;font-size:10px;color:#9ca3af;';
+          bottomLine.innerHTML = '<span>' + startStr + ' ~ ' + endStr + '</span>' + (deployStr ? '<span style="color:#f97316;font-weight:600;" title="배포일">🚀' + deployStr + '</span>' : '');
+
+          // 채팅 버튼
+          const chatBtn = document.createElement('button');
+          chatBtn.textContent = '💬';
+          chatBtn.title = project.name + ' 채팅';
+          chatBtn.style.cssText = 'background:none;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:11px;padding:0 4px;line-height:16px;margin-left:auto;color:#6b7280;';
+          chatBtn.onclick = function(e) {
+            e.stopPropagation();
+            document.getElementById('chatPanel').classList.add('open');
+            switchChatTab('project');
+            var sel = document.getElementById('projectChatSelect');
+            sel.value = project.id;
+            switchProject(project.id);
+            clearChatBadge();
+          };
+          bottomLine.appendChild(chatBtn);
+
+          nameRow.appendChild(topLine);
+          nameRow.appendChild(bottomLine);
           namesScroll.appendChild(nameRow);
 
           const row = document.createElement('div');
@@ -4608,6 +5026,10 @@
         if (state.filters.search && !p.name.includes(state.filters.search) && !p.id.includes(state.filters.search)) return false;
         if (state.filters.tier && p.tier !== state.filters.tier) return false;
         if (state.filters.status && p.status !== state.filters.status) return false;
+        // 스케줄탭: 완료/Deprecated 프로젝트는 상태필터로 명시적으로 선택하지 않으면 숨김
+        if (state.currentTab === 'schedule' && !state.filters.status) {
+          if (p.status === '완료' || p.status === 'Deprecated') return false;
+        }
         return true;
       });
     }
@@ -5202,11 +5624,60 @@
       _showToast(PHASE_LABELS[_inlineState.phase] + ' 스케줄이 등록되었습니다');
     }
 
+    // 프로젝트 정렬 상태
+    let _projectSortKey = 'tier';
+    function sortProjects(key) {
+      _projectSortKey = key;
+      renderProjects();
+    }
+
+    function getSortedProjects(projects) {
+      const tierRank = { CRITICAL: 0, TIER1: 1, TIER2: 2, TIER3: 3, TIER4: 4, CONTINUOUS: 5 };
+      const statusRank = { '진행': 0, '대기': 1, '연기': 2, '완료': 3, 'Deprecated': 4 };
+      const sorted = projects.slice();
+      sorted.sort(function(a, b) {
+        switch (_projectSortKey) {
+          case 'tier': return (tierRank[a.tier] || 99) - (tierRank[b.tier] || 99);
+          case 'name': return a.name.localeCompare(b.name, 'ko');
+          case 'score': return (b.bizScore || 0) - (a.bizScore || 0);
+          case 'status': return (statusRank[a.status] || 99) - (statusRank[b.status] || 99);
+          case 'deploy': {
+            const da = a.deployDate ? parseLocalDate(a.deployDate) : null;
+            const db = b.deployDate ? parseLocalDate(b.deployDate) : null;
+            if (!da && !db) return 0;
+            if (!da) return 1;
+            if (!db) return -1;
+            return da - db;
+          }
+          case 'deadline': {
+            // 가장 빠른 종료일 기준
+            function getEarliestEnd(p) {
+              var earliest = null;
+              ['plan','design','front','back','qa'].forEach(function(ph) {
+                if (p.phases[ph] && p.phases[ph].end) {
+                  var d = parseLocalDate(p.phases[ph].end);
+                  if (d && d >= TODAY && (!earliest || d < earliest)) earliest = d;
+                }
+              });
+              return earliest;
+            }
+            var ea = getEarliestEnd(a), eb = getEarliestEnd(b);
+            if (!ea && !eb) return 0;
+            if (!ea) return 1;
+            if (!eb) return -1;
+            return ea - eb;
+          }
+          default: return 0;
+        }
+      });
+      return sorted;
+    }
+
     function renderProjects() {
       const tbody = document.getElementById('projectsTable');
       tbody.innerHTML = '';
 
-      filterProjects().forEach((p, idx) => {
+      getSortedProjects(filterProjects()).forEach((p, idx) => {
         const gmvBadge = p.gmvImpact ? `<span class="gmv-badge">${p.gmvImpact}</span>` : '<span style="color:#bbb;font-size:12px;">-</span>';
         const row = `
           <tr>
@@ -5837,6 +6308,11 @@
     window.switchChatTab = switchChatTab;
     window.switchProject = switchProject;
     window.sendChatMessage = sendChatMessage;
+    window.handleMentionInput = handleMentionInput;
+    window.handleMentionKey = handleMentionKey;
+    window.insertMention = insertMention;
+    window.clearChatBadge = clearChatBadge;
+    window.sortProjects = sortProjects;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
