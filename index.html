@@ -1422,6 +1422,100 @@
       font-size: 13px;
     }
 
+    /* === Chat Room List === */
+    .chat-room-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .chat-room-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .chat-room-item:hover { background: #f9fafb; }
+    .chat-room-item.has-unread { background: #eff6ff; }
+    .chat-room-item.has-mention { background: #fff7ed; }
+    .chat-room-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+    .chat-room-body { flex: 1; min-width: 0; }
+    .chat-room-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chat-room-preview {
+      font-size: 11px;
+      color: #9ca3af;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .chat-room-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .chat-room-time {
+      font-size: 10px;
+      color: #9ca3af;
+    }
+    .chat-room-badge {
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      background: #2563eb;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+    }
+    .chat-room-badge.mention-badge {
+      background: #f97316;
+      animation: mentionPulse 1.2s ease-in-out infinite;
+    }
+    .chat-room-back {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+    .chat-room-back:hover { background: #f3f4f6; }
+    .chat-room-back-arrow { font-size: 16px; color: #6b7280; }
+    .chat-room-title-bar {
+      font-size: 12px;
+      font-weight: 500;
+      color: #6b7280;
+    }
+
     .user-header-info {
       display: flex;
       align-items: center;
@@ -1874,21 +1968,28 @@
       </div>
       <!-- Project Chat Tab -->
       <div class="chat-tab-pane" id="projectChatTab">
-        <div class="chat-project-selector">
-          <select id="projectChatSelect" onchange="switchProject(this.value)" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;">
-            <option value="">프로젝트 선택...</option>
-          </select>
-          <div id="projectSelectDisabled" style="display:none;color:#6b7280;font-size:12px;">프로젝트를 선택하세요</div>
+        <!-- 방 리스트 뷰 -->
+        <div id="projectRoomListView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+          <div class="chat-room-list" id="projectRoomList"></div>
+          <div class="chat-disabled" id="projectChatDisabled" style="text-align:center;padding:40px 20px;color:#9ca3af;font-size:13px;">로그인 후 이용 가능합니다</div>
         </div>
-        <div class="chat-messages" id="projectChatMessages"></div>
-        <div style="position:relative;">
-          <div class="mention-autocomplete" id="projectMentionAC"></div>
-          <div class="chat-input-area" id="projectChatInput" style="display:none;">
-            <input type="text" class="chat-input" id="projectChatText" placeholder="@멘션 또는 메시지 입력..." oninput="handleMentionInput(this,'projectMentionAC')" onkeydown="handleMentionKey(event,this,'project','projectMentionAC')" onkeypress="if(event.key==='Enter'&&!document.getElementById('projectMentionAC').classList.contains('show')) sendChatMessage('project')">
-            <button class="chat-send-btn" onclick="sendChatMessage('project')">전송</button>
+        <!-- 방 내부 뷰 (숨김) -->
+        <div id="projectRoomView" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+          <div class="chat-room-back" onclick="backToRoomList()">
+            <span class="chat-room-back-arrow">←</span>
+            <span id="projectRoomTitle">프로젝트 채팅</span>
+          </div>
+          <div class="chat-messages" id="projectChatMessages"></div>
+          <div style="position:relative;">
+            <div class="mention-autocomplete" id="projectMentionAC"></div>
+            <div class="chat-input-area" id="projectChatInput" style="display:none;">
+              <input type="text" class="chat-input" id="projectChatText" placeholder="@멘션 또는 메시지 입력..." oninput="handleMentionInput(this,'projectMentionAC')" onkeydown="handleMentionKey(event,this,'project','projectMentionAC')" onkeypress="if(event.key==='Enter'&&!document.getElementById('projectMentionAC').classList.contains('show')) sendChatMessage('project')">
+              <button class="chat-send-btn" onclick="sendChatMessage('project')">전송</button>
+            </div>
           </div>
         </div>
-        <div class="chat-disabled" id="projectChatDisabled" style="text-align:center;padding:40px 20px;color:#9ca3af;font-size:13px;">로그인 후 이용 가능합니다</div>
+        <!-- hidden select for backward compat -->
+        <select id="projectChatSelect" style="display:none;"></select>
       </div>
     </div>
   </div>
@@ -2170,14 +2271,28 @@
     }
 
     /* ========== CHAT SYSTEM ========== */
+    // Room-level read state (localStorage per user)
+    const _roomState = {}; // { projId: { lastRead: timestamp, unread: 0, hasMention: false, lastMsg: null, lastMsgTime: 0 } }
+    let _roomListeners = {}; // Firebase listeners per room for live updates
+
+    function _getRoomReadKey(projId) {
+      var uid = state.currentUser ? state.currentUser.uid : 'local';
+      return 'af_chat_read_' + uid + '_' + projId;
+    }
+    function _getRoomLastRead(projId) {
+      try { return parseInt(localStorage.getItem(_getRoomReadKey(projId))) || 0; } catch(e) { return 0; }
+    }
+    function _setRoomLastRead(projId, ts) {
+      try { localStorage.setItem(_getRoomReadKey(projId), ts); } catch(e) {}
+    }
+
     function initChatSystem() {
       populateChatProjectSelector();
-      document.getElementById('projectChatSelect').style.display = 'block';
       if (state.currentUser && _fb.db) {
         loadGlobalChatMessages();
         updateChatInputVisibility();
+        initProjectRoomList();
       } else {
-        // 로컬 모드: UI는 보여주되 전송 불가 안내
         document.getElementById('globalChatDisabled').style.display = 'block';
         document.getElementById('globalChatDisabled').textContent = '로컬 모드에서는 채팅을 사용할 수 없습니다. 배포 후 Google 로그인하면 이용 가능합니다.';
         document.getElementById('globalChatInput').style.display = 'none';
@@ -2188,43 +2303,255 @@
     }
 
     function populateChatProjectSelector() {
-      const select = document.getElementById('projectChatSelect');
+      var select = document.getElementById('projectChatSelect');
+      if (!select) return;
       select.innerHTML = '<option value="">프로젝트 선택...</option>';
-      state.projects.forEach(proj => {
-        const opt = document.createElement('option');
+      state.projects.forEach(function(proj) {
+        var opt = document.createElement('option');
         opt.value = proj.id;
         opt.textContent = proj.name;
         select.appendChild(opt);
       });
     }
 
+    function initProjectRoomList() {
+      if (!_fb.db || !state.currentUser) return;
+      document.getElementById('projectChatDisabled').style.display = 'none';
+
+      // Initialize room state for each project
+      state.projects.forEach(function(proj) {
+        _roomState[proj.id] = {
+          lastRead: _getRoomLastRead(proj.id),
+          unread: 0,
+          hasMention: false,
+          lastMsg: null,
+          lastMsgTime: 0,
+          lastSender: ''
+        };
+      });
+
+      // Fetch last message for each project room + set up live listeners
+      state.projects.forEach(function(proj) {
+        var path = 'chats/project/' + proj.id;
+        // Get last message
+        _fb.db.ref(path).orderByChild('timestamp').limitToLast(1).once('value', function(snap) {
+          snap.forEach(function(child) {
+            var msg = child.val();
+            if (msg) {
+              _roomState[proj.id].lastMsg = msg.text || '';
+              _roomState[proj.id].lastMsgTime = msg.timestamp || 0;
+              _roomState[proj.id].lastSender = msg.displayName || '';
+            }
+          });
+          // Count unread
+          var lastRead = _roomState[proj.id].lastRead;
+          if (lastRead > 0) {
+            _fb.db.ref(path).orderByChild('timestamp').startAt(lastRead + 1).once('value', function(unreadSnap) {
+              var count = 0;
+              var hasMention = false;
+              unreadSnap.forEach(function(c) {
+                var m = c.val();
+                if (m && m.uid !== state.currentUser.uid) {
+                  count++;
+                  if (checkMentionInMessage(m.text)) hasMention = true;
+                }
+              });
+              _roomState[proj.id].unread = count;
+              _roomState[proj.id].hasMention = hasMention;
+              renderRoomList();
+            });
+          } else {
+            renderRoomList();
+          }
+        });
+
+        // Live listener for new messages in each room
+        var liveRef = _fb.db.ref(path).orderByChild('timestamp').startAt(Date.now());
+        var listener = liveRef.on('child_added', function(snap) {
+          var msg = snap.val();
+          if (!msg) return;
+          _roomState[proj.id].lastMsg = msg.text || '';
+          _roomState[proj.id].lastMsgTime = msg.timestamp || 0;
+          _roomState[proj.id].lastSender = msg.displayName || '';
+          // If not currently viewing this room, increment unread
+          if (state.selectedProjectChat !== proj.id || !document.getElementById('projectRoomView').style.display || document.getElementById('projectRoomView').style.display === 'none') {
+            if (msg.uid !== state.currentUser.uid) {
+              _roomState[proj.id].unread = (_roomState[proj.id].unread || 0) + 1;
+              if (checkMentionInMessage(msg.text)) _roomState[proj.id].hasMention = true;
+            }
+          }
+          renderRoomList();
+        });
+        _roomListeners[proj.id] = function() { liveRef.off('child_added', listener); };
+      });
+    }
+
+    function renderRoomList() {
+      var container = document.getElementById('projectRoomList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      // Sort rooms: rooms with unread first (mentions first), then by lastMsgTime desc
+      var rooms = state.projects.map(function(proj) {
+        var rs = _roomState[proj.id] || { unread: 0, hasMention: false, lastMsgTime: 0, lastMsg: null, lastSender: '' };
+        return { proj: proj, state: rs };
+      });
+      rooms.sort(function(a, b) {
+        // Mention rooms first
+        if (a.state.hasMention && !b.state.hasMention) return -1;
+        if (!a.state.hasMention && b.state.hasMention) return 1;
+        // Unread rooms next
+        if (a.state.unread > 0 && b.state.unread === 0) return -1;
+        if (a.state.unread === 0 && b.state.unread > 0) return 1;
+        // Then by last message time desc
+        return (b.state.lastMsgTime || 0) - (a.state.lastMsgTime || 0);
+      });
+
+      if (rooms.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#9ca3af;font-size:13px;">프로젝트가 없습니다</div>';
+        return;
+      }
+
+      rooms.forEach(function(room) {
+        var proj = room.proj;
+        var rs = room.state;
+        var tierColor = TIER_COLORS[proj.tier] || '#6b7280';
+        var hasUnread = rs.unread > 0;
+        var hasMention = rs.hasMention;
+
+        var item = document.createElement('div');
+        item.className = 'chat-room-item' + (hasMention ? ' has-mention' : (hasUnread ? ' has-unread' : ''));
+        item.onclick = function() { enterRoom(proj.id); };
+
+        // Icon
+        var icon = document.createElement('div');
+        icon.className = 'chat-room-icon';
+        icon.style.background = tierColor;
+        icon.textContent = proj.id.replace('P', '');
+
+        // Body
+        var body = document.createElement('div');
+        body.className = 'chat-room-body';
+        var nameEl = document.createElement('div');
+        nameEl.className = 'chat-room-name';
+        var nameText = proj.name.length > 20 ? proj.name.substring(0, 20) + '...' : proj.name;
+        nameEl.innerHTML = nameText;
+        if (hasMention) {
+          nameEl.innerHTML += ' <span style="font-size:10px;color:#f97316;font-weight:700;">@멘션</span>';
+        }
+        body.appendChild(nameEl);
+
+        if (rs.lastMsg) {
+          var preview = document.createElement('div');
+          preview.className = 'chat-room-preview';
+          var previewText = rs.lastSender ? rs.lastSender.split(' ')[0] + ': ' + rs.lastMsg : rs.lastMsg;
+          preview.textContent = previewText.length > 40 ? previewText.substring(0, 40) + '...' : previewText;
+          body.appendChild(preview);
+        } else {
+          var emptyPreview = document.createElement('div');
+          emptyPreview.className = 'chat-room-preview';
+          emptyPreview.textContent = '메시지 없음';
+          emptyPreview.style.fontStyle = 'italic';
+          body.appendChild(emptyPreview);
+        }
+
+        // Meta (time + badge)
+        var meta = document.createElement('div');
+        meta.className = 'chat-room-meta';
+        if (rs.lastMsgTime) {
+          var timeEl = document.createElement('div');
+          timeEl.className = 'chat-room-time';
+          var d = new Date(rs.lastMsgTime);
+          var now = new Date();
+          if (d.toDateString() === now.toDateString()) {
+            timeEl.textContent = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+          } else {
+            timeEl.textContent = (d.getMonth()+1) + '/' + d.getDate();
+          }
+          meta.appendChild(timeEl);
+        }
+        if (hasUnread) {
+          var badge = document.createElement('div');
+          badge.className = 'chat-room-badge' + (hasMention ? ' mention-badge' : '');
+          badge.textContent = rs.unread > 99 ? '99+' : rs.unread;
+          meta.appendChild(badge);
+        }
+
+        item.appendChild(icon);
+        item.appendChild(body);
+        item.appendChild(meta);
+        container.appendChild(item);
+      });
+    }
+
+    function enterRoom(projId) {
+      state.selectedProjectChat = projId;
+      var proj = state.projects.find(function(p) { return p.id === projId; });
+      document.getElementById('projectRoomTitle').textContent = proj ? proj.name : projId;
+      document.getElementById('projectRoomListView').style.display = 'none';
+      document.getElementById('projectRoomView').style.display = 'flex';
+      // Mark as reading
+      _roomState[projId] = _roomState[projId] || { unread: 0, hasMention: false, lastRead: 0 };
+      _roomState[projId].unread = 0;
+      _roomState[projId].hasMention = false;
+      _setRoomLastRead(projId, Date.now());
+      renderRoomList();
+      loadProjectChatMessages(projId);
+    }
+
+    function backToRoomList() {
+      // Mark current room as fully read
+      if (state.selectedProjectChat) {
+        _setRoomLastRead(state.selectedProjectChat, Date.now());
+        if (_roomState[state.selectedProjectChat]) {
+          _roomState[state.selectedProjectChat].unread = 0;
+          _roomState[state.selectedProjectChat].hasMention = false;
+          _roomState[state.selectedProjectChat].lastRead = Date.now();
+        }
+      }
+      state.selectedProjectChat = null;
+      if (state.chatListeners['project']) {
+        state.chatListeners['project']();
+        state.chatListeners['project'] = null;
+      }
+      document.getElementById('projectRoomView').style.display = 'none';
+      document.getElementById('projectRoomListView').style.display = 'flex';
+      renderRoomList();
+    }
+
     function switchChatTab(tab) {
       state.currentChatTab = tab;
-      document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.chat-tab-pane').forEach(p => p.classList.remove('active'));
-      // Activate correct tab button
-      const tabBtns = document.querySelectorAll('.chat-tab');
-      tabBtns.forEach(t => { if ((tab === 'global' && t.textContent.includes('전체')) || (tab === 'project' && t.textContent.includes('프로젝트'))) t.classList.add('active'); });
+      document.querySelectorAll('.chat-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.chat-tab-pane').forEach(function(p) { p.classList.remove('active'); });
+      var tabBtns = document.querySelectorAll('.chat-tab');
+      tabBtns.forEach(function(t) { if ((tab === 'global' && t.textContent.includes('전체')) || (tab === 'project' && t.textContent.includes('프로젝트'))) t.classList.add('active'); });
       if (tab === 'global') {
         document.getElementById('globalChatTab').classList.add('active');
         if (state.currentUser && _fb.db) loadGlobalChatMessages();
       } else {
         document.getElementById('projectChatTab').classList.add('active');
-        if (state.selectedProjectChat && state.currentUser && _fb.db) {
-          loadProjectChatMessages(state.selectedProjectChat);
+        // Show room list by default, or room view if already in a room
+        if (state.selectedProjectChat) {
+          document.getElementById('projectRoomListView').style.display = 'none';
+          document.getElementById('projectRoomView').style.display = 'flex';
+        } else {
+          document.getElementById('projectRoomListView').style.display = 'flex';
+          document.getElementById('projectRoomView').style.display = 'none';
+          renderRoomList();
         }
       }
     }
 
     function switchProject(projId) {
-      state.selectedProjectChat = projId;
       if (projId) {
-        loadProjectChatMessages(projId);
+        enterRoom(projId);
+        // Also switch to project chat tab
+        switchChatTab('project');
       }
     }
 
     function toggleChatPanel() {
-      const panel = document.getElementById('chatPanel');
+      var panel = document.getElementById('chatPanel');
       panel.classList.toggle('open');
       if (panel.classList.contains('open')) {
         clearChatBadge();
@@ -2246,23 +2573,21 @@
 
       if (state.chatListeners['global']) state.chatListeners['global']();
 
-      const messagesEl = document.getElementById('globalChatMessages');
+      var messagesEl = document.getElementById('globalChatMessages');
       messagesEl.innerHTML = '';
       _chatPage.globalOldest = null;
 
-      // Load initial batch
-      const initRef = _fb.db.ref('chats/global').orderByChild('timestamp').limitToLast(CHAT_PAGE_SIZE);
+      var initRef = _fb.db.ref('chats/global').orderByChild('timestamp').limitToLast(CHAT_PAGE_SIZE);
       initRef.once('value', function(snapshot) {
-        const msgs = [];
+        var msgs = [];
         snapshot.forEach(function(child) { msgs.push({ key: child.key, ...child.val() }); });
         if (msgs.length > 0) _chatPage.globalOldest = msgs[0].timestamp;
         msgs.forEach(function(msg) { appendChatMessage(msg, 'globalChatMessages'); });
       });
 
-      // Live listener for NEW messages only
-      const liveRef = _fb.db.ref('chats/global').orderByChild('timestamp').startAt(Date.now());
-      const listener = liveRef.on('child_added', function(snap) {
-        const msg = snap.val();
+      var liveRef = _fb.db.ref('chats/global').orderByChild('timestamp').startAt(Date.now());
+      var listener = liveRef.on('child_added', function(snap) {
+        var msg = snap.val();
         if (msg) {
           appendChatMessage(msg, 'globalChatMessages');
           handleNewChatMessage(msg);
@@ -2270,17 +2595,16 @@
       });
       state.chatListeners['global'] = function() { liveRef.off('child_added', listener); };
 
-      // Scroll-up to load older messages
       messagesEl.onscroll = function() {
         if (messagesEl.scrollTop < 40 && !_chatPage.globalLoading && _chatPage.globalOldest) {
           _chatPage.globalLoading = true;
-          const olderRef = _fb.db.ref('chats/global').orderByChild('timestamp').endAt(_chatPage.globalOldest - 1).limitToLast(CHAT_PAGE_SIZE);
+          var olderRef = _fb.db.ref('chats/global').orderByChild('timestamp').endAt(_chatPage.globalOldest - 1).limitToLast(CHAT_PAGE_SIZE);
           olderRef.once('value', function(snapshot) {
-            const msgs = [];
+            var msgs = [];
             snapshot.forEach(function(child) { msgs.push({ key: child.key, ...child.val() }); });
             if (msgs.length > 0) {
               _chatPage.globalOldest = msgs[0].timestamp;
-              const prevHeight = messagesEl.scrollHeight;
+              var prevHeight = messagesEl.scrollHeight;
               msgs.forEach(function(msg) { prependChatMessage(msg, 'globalChatMessages'); });
               messagesEl.scrollTop = messagesEl.scrollHeight - prevHeight;
             }
@@ -2292,34 +2616,39 @@
 
     function loadProjectChatMessages(projId) {
       if (!_fb.db || !state.currentUser) {
-        document.getElementById('projectChatDisabled').style.display = 'block';
         document.getElementById('projectChatInput').style.display = 'none';
         return;
       }
-      document.getElementById('projectChatDisabled').style.display = 'none';
       document.getElementById('projectChatInput').style.display = 'flex';
 
       if (state.chatListeners['project']) state.chatListeners['project']();
 
-      const messagesEl = document.getElementById('projectChatMessages');
+      var messagesEl = document.getElementById('projectChatMessages');
       messagesEl.innerHTML = '';
       _chatPage.projectOldest = null;
 
-      const path = 'chats/project/' + projId;
-      const initRef = _fb.db.ref(path).orderByChild('timestamp').limitToLast(CHAT_PAGE_SIZE);
+      var path = 'chats/project/' + projId;
+      var initRef = _fb.db.ref(path).orderByChild('timestamp').limitToLast(CHAT_PAGE_SIZE);
       initRef.once('value', function(snapshot) {
-        const msgs = [];
+        var msgs = [];
         snapshot.forEach(function(child) { msgs.push({ key: child.key, ...child.val() }); });
         if (msgs.length > 0) _chatPage.projectOldest = msgs[0].timestamp;
         msgs.forEach(function(msg) { appendChatMessage(msg, 'projectChatMessages'); });
       });
 
-      const liveRef = _fb.db.ref(path).orderByChild('timestamp').startAt(Date.now());
-      const listener = liveRef.on('child_added', function(snap) {
-        const msg = snap.val();
+      var liveRef = _fb.db.ref(path).orderByChild('timestamp').startAt(Date.now());
+      var listener = liveRef.on('child_added', function(snap) {
+        var msg = snap.val();
         if (msg) {
           appendChatMessage(msg, 'projectChatMessages');
           handleNewChatMessage(msg);
+          // Update room state live
+          if (_roomState[projId]) {
+            _roomState[projId].lastMsg = msg.text || '';
+            _roomState[projId].lastMsgTime = msg.timestamp || Date.now();
+            _roomState[projId].lastSender = msg.displayName || '';
+            _setRoomLastRead(projId, Date.now());
+          }
         }
       });
       state.chatListeners['project'] = function() { liveRef.off('child_added', listener); };
@@ -2327,13 +2656,13 @@
       messagesEl.onscroll = function() {
         if (messagesEl.scrollTop < 40 && !_chatPage.projectLoading && _chatPage.projectOldest) {
           _chatPage.projectLoading = true;
-          const olderRef = _fb.db.ref(path).orderByChild('timestamp').endAt(_chatPage.projectOldest - 1).limitToLast(CHAT_PAGE_SIZE);
+          var olderRef = _fb.db.ref(path).orderByChild('timestamp').endAt(_chatPage.projectOldest - 1).limitToLast(CHAT_PAGE_SIZE);
           olderRef.once('value', function(snapshot) {
-            const msgs = [];
+            var msgs = [];
             snapshot.forEach(function(child) { msgs.push({ key: child.key, ...child.val() }); });
             if (msgs.length > 0) {
               _chatPage.projectOldest = msgs[0].timestamp;
-              const prevHeight = messagesEl.scrollHeight;
+              var prevHeight = messagesEl.scrollHeight;
               msgs.forEach(function(msg) { prependChatMessage(msg, 'projectChatMessages'); });
               messagesEl.scrollTop = messagesEl.scrollHeight - prevHeight;
             }
@@ -6313,6 +6642,8 @@
     window.insertMention = insertMention;
     window.clearChatBadge = clearChatBadge;
     window.sortProjects = sortProjects;
+    window.enterRoom = enterRoom;
+    window.backToRoomList = backToRoomList;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
