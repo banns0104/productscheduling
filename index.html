@@ -3233,6 +3233,10 @@
     function handleMentionKey(event, inputEl, type, acId) {
       const ac = document.getElementById(acId);
       if (!ac.classList.contains('show')) return;
+
+      // Korean IME 조합 중이면 Enter로 조합 완료만 하고, 멘션 삽입은 다음 Enter에서 처리
+      if (event.isComposing || event.keyCode === 229) return;
+
       const items = ac.querySelectorAll('.mention-item');
       if (event.key === 'ArrowDown') {
         event.preventDefault();
@@ -3259,7 +3263,9 @@
     function insertMention(inputEl, acId, name) {
       const val = inputEl.value;
       const before = val.substring(0, _mentionState.startPos);
-      const after = val.substring(inputEl.selectionStart);
+      // @query 끝 위치를 정확히 계산 (Korean IME 조합 중 selectionStart 오차 방지)
+      const queryEnd = _mentionState.startPos + 1 + _mentionState.query.length;
+      const after = val.substring(queryEnd);
       inputEl.value = before + '@' + name + ' ' + after;
       inputEl.focus();
       const newPos = _mentionState.startPos + name.length + 2;
