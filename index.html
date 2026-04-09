@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AboutFishing 스케줄 대시보드 v8</title>
-  <!-- No external dependencies -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -54,6 +56,17 @@
     .header-logo-img {
       height: 32px;
       width: auto;
+    }
+
+    .af-logo-text {
+      font-family: 'Pacifico', cursive;
+      font-size: 22px;
+      color: #1f2937;
+      line-height: 1;
+      transform: rotate(-8deg);
+      display: inline-block;
+      white-space: nowrap;
+      letter-spacing: -0.5px;
     }
 
     .header-controls {
@@ -1973,7 +1986,7 @@
           <circle cx="20" cy="20" r="8" stroke="#2563eb" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
         </svg>
       </div>
-      <div class="login-logo"><svg viewBox="0 0 200 70" style="height:48px;width:auto;" xmlns="http://www.w3.org/2000/svg"><style>@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&amp;display=swap');</style><text x="4" y="32" font-family="'Dancing Script', cursive" font-weight="700" font-size="30" fill="#1f2937" transform="rotate(-8, 100, 35)">about</text><text x="28" y="62" font-family="'Dancing Script', cursive" font-weight="700" font-size="30" fill="#1f2937" transform="rotate(-8, 100, 35)">fishing</text></svg></div>
+      <div class="login-logo"><span class="af-logo-text" style="font-size:32px;">about<br>fishing</span></div>
       <div class="login-subtitle">Project Scheduling Dashboard</div>
       <div class="login-divider"><span>@aboutfishing.kr 계정으로 로그인</span></div>
       <button class="login-btn" id="googleLoginBtn" onclick="loginWithGoogle()">
@@ -1994,7 +2007,7 @@
     <!-- Header -->
     <div class="header">
       <div class="header-top">
-        <div class="header-title"><svg class="header-logo-img" viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg"><style>@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&amp;display=swap');</style><text x="4" y="32" font-family="'Dancing Script', cursive" font-weight="700" font-size="30" fill="#1f2937" transform="rotate(-8, 100, 35)">about</text><text x="28" y="62" font-family="'Dancing Script', cursive" font-weight="700" font-size="30" fill="#1f2937" transform="rotate(-8, 100, 35)">fishing</text></svg><span style="font-size:15px;font-weight:500;color:#6b7280;">스케줄 대시보드</span> <span id="syncStatus" style="font-size: 11px; font-weight: 400; padding: 2px 8px; border-radius: 10px; margin-left: 4px; background: #f3f4f6; color: #9ca3af;">로컬</span></div>
+        <div class="header-title"><span class="af-logo-text">about<br>fishing</span><span style="font-size:15px;font-weight:500;color:#6b7280;margin-left:12px;">스케줄 대시보드</span> <span id="syncStatus" style="font-size: 11px; font-weight: 400; padding: 2px 8px; border-radius: 10px; margin-left: 4px; background: #f3f4f6; color: #9ca3af;">로컬</span></div>
         <div class="header-controls">
           <input type="text" class="search-input" id="searchInput" placeholder="검색...">
           <div class="filter-group">
