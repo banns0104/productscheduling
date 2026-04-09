@@ -163,6 +163,12 @@
       align-items: center;
       gap: 12px;
       height: 44px;
+      z-index: 16;
+    }
+
+    .gantt-toolbar.is-sticky {
+      position: fixed;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
     }
 
     .view-toggle {
@@ -2034,7 +2040,7 @@
     <div class="content">
       <!-- Tab 1: Schedule -->
       <div class="tab-content active" id="schedule">
-        <div class="gantt-toolbar">
+        <div class="gantt-toolbar" id="ganttToolbar">
           <div class="view-toggle">
             <button class="btn active" data-view="project">프로젝트별</button>
             <button class="btn" data-view="member">담당자별</button>
@@ -2049,6 +2055,7 @@
             <button class="btn" id="zoomIn">+</button>
           </div>
         </div>
+        <div id="toolbarSpacer" style="display:none;"></div>
 
         <div class="gantt-container">
           <!-- Left: Names -->
@@ -7134,17 +7141,20 @@
         });
       }
 
-      // Sticky gantt header on vertical scroll
+      // Sticky gantt toolbar + header on vertical scroll
       (function initStickyGanttHeader() {
+        var toolbar = document.getElementById('ganttToolbar');
+        var toolbarSpacer = document.getElementById('toolbarSpacer');
         var namesHeader = document.getElementById('ganttNamesHeader');
         var chartHeader = document.getElementById('ganttHeaderEl');
         var namesSpacer = document.getElementById('namesHeaderSpacer');
         var chartSpacer = document.getElementById('ganttHeaderSpacer');
         var ganttContainer = document.querySelector('.gantt-container');
+        var scheduleTab = document.getElementById('schedule');
         var appHeader = document.querySelector('.header');
         var _stickyActive = false;
 
-        if (!namesHeader || !chartHeader || !ganttContainer || !appHeader) return;
+        if (!toolbar || !namesHeader || !chartHeader || !ganttContainer || !appHeader) return;
 
         function updateSticky() {
           if (state.currentTab !== 'schedule') {
@@ -7152,44 +7162,72 @@
             return;
           }
           var appHeaderBottom = appHeader.getBoundingClientRect().bottom;
-          var containerRect = ganttContainer.getBoundingClientRect();
+          // Use toolbar's original position as the trigger point
+          // When sticky, spacer replaces toolbar so we check spacer or toolbar
+          var triggerEl = _stickyActive ? toolbarSpacer : toolbar;
+          var triggerTop = triggerEl.getBoundingClientRect().top;
+          var containerBottom = ganttContainer.getBoundingClientRect().bottom;
+          var toolbarH = toolbar.offsetHeight || 44;
           var headerH = namesHeader.offsetHeight || 47;
+          var totalStickyH = toolbarH + headerH;
 
-          // Stick when the header row would scroll above the app header bottom
-          // Unstick when the gantt container bottom is above the app header (scrolled past entire gantt)
-          var shouldStick = containerRect.top < appHeaderBottom && containerRect.bottom > (appHeaderBottom + headerH + 50);
+          var shouldStick = triggerTop < appHeaderBottom && containerBottom > (appHeaderBottom + totalStickyH + 50);
 
           if (shouldStick && !_stickyActive) {
-            stick(appHeaderBottom, headerH);
+            stick(appHeaderBottom, toolbarH, headerH);
           } else if (!shouldStick && _stickyActive) {
             unstick();
           } else if (shouldStick && _stickyActive) {
-            // Update positions (resize, etc.)
-            var namesCol = document.querySelector('.gantt-names');
-            var chartArea = document.querySelector('.gantt-chart-area');
-            namesHeader.style.top = appHeaderBottom + 'px';
-            namesHeader.style.left = namesCol.getBoundingClientRect().left + 'px';
-            namesHeader.style.width = namesCol.offsetWidth + 'px';
-            chartHeader.style.top = appHeaderBottom + 'px';
-            chartHeader.style.left = chartArea.getBoundingClientRect().left + 'px';
-            chartHeader.style.width = chartArea.offsetWidth + 'px';
+            // Update positions on scroll/resize
+            updatePositions(appHeaderBottom, toolbarH);
           }
         }
 
-        function stick(topPos, headerH) {
+        function updatePositions(appHeaderBottom, toolbarH) {
+          var namesCol = document.querySelector('.gantt-names');
+          var chartArea = document.querySelector('.gantt-chart-area');
+          var schedRect = scheduleTab.getBoundingClientRect();
+
+          toolbar.style.top = appHeaderBottom + 'px';
+          toolbar.style.left = schedRect.left + 'px';
+          toolbar.style.width = schedRect.width + 'px';
+
+          var hdrTop = appHeaderBottom + toolbarH;
+          namesHeader.style.top = hdrTop + 'px';
+          namesHeader.style.left = namesCol.getBoundingClientRect().left + 'px';
+          namesHeader.style.width = namesCol.offsetWidth + 'px';
+
+          chartHeader.style.top = hdrTop + 'px';
+          chartHeader.style.left = chartArea.getBoundingClientRect().left + 'px';
+          chartHeader.style.width = chartArea.offsetWidth + 'px';
+        }
+
+        function stick(appHeaderBottom, toolbarH, headerH) {
           _stickyActive = true;
           var namesCol = document.querySelector('.gantt-names');
           var chartArea = document.querySelector('.gantt-chart-area');
+          var schedRect = scheduleTab.getBoundingClientRect();
 
+          // Toolbar
+          toolbar.classList.add('is-sticky');
+          toolbar.style.top = appHeaderBottom + 'px';
+          toolbar.style.left = schedRect.left + 'px';
+          toolbar.style.width = schedRect.width + 'px';
+          toolbarSpacer.style.display = 'block';
+          toolbarSpacer.style.height = toolbarH + 'px';
+
+          // Names header
+          var hdrTop = appHeaderBottom + toolbarH;
           namesHeader.classList.add('is-sticky');
-          namesHeader.style.top = topPos + 'px';
+          namesHeader.style.top = hdrTop + 'px';
           namesHeader.style.left = namesCol.getBoundingClientRect().left + 'px';
           namesHeader.style.width = namesCol.offsetWidth + 'px';
           namesSpacer.style.display = 'block';
           namesSpacer.style.height = headerH + 'px';
 
+          // Chart header
           chartHeader.classList.add('is-sticky');
-          chartHeader.style.top = topPos + 'px';
+          chartHeader.style.top = hdrTop + 'px';
           chartHeader.style.left = chartArea.getBoundingClientRect().left + 'px';
           chartHeader.style.width = chartArea.offsetWidth + 'px';
           chartSpacer.style.display = 'block';
@@ -7198,6 +7236,12 @@
 
         function unstick() {
           _stickyActive = false;
+          toolbar.classList.remove('is-sticky');
+          toolbar.style.top = '';
+          toolbar.style.left = '';
+          toolbar.style.width = '';
+          toolbarSpacer.style.display = 'none';
+
           namesHeader.classList.remove('is-sticky');
           namesHeader.style.top = '';
           namesHeader.style.left = '';
