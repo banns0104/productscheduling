@@ -364,6 +364,7 @@
       flex: 1;
       overflow-x: auto;
       overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
     }
 
     .gantt-bars-container {
@@ -1550,6 +1551,7 @@
     /* ========== RESPONSIVE ========== */
 
     /* 태블릿 (768px 이하) */
+    /* ===== 태블릿 (768px 이하) ===== */
     @media (max-width: 768px) {
       .header {
         padding: 8px 12px;
@@ -1575,7 +1577,7 @@
       .search-input {
         width: 100%;
         font-size: 13px;
-        padding: 6px 10px;
+        padding: 8px 12px;
       }
 
       .filter-group {
@@ -1588,17 +1590,19 @@
         flex: 1;
         min-width: 0;
         font-size: 12px;
-        padding: 6px 8px;
+        padding: 8px 10px;
       }
 
       .tabs {
         padding: 0 8px;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
       .tab {
         padding: 10px 12px;
         font-size: 13px;
+        white-space: nowrap;
       }
 
       .gantt-toolbar {
@@ -1614,23 +1618,33 @@
       }
 
       .gantt-names {
-        width: 160px;
+        width: 180px;
       }
 
       .name-row {
-        font-size: 11px;
-        padding: 4px 8px;
+        font-size: 12px;
+        padding: 6px 8px;
+        min-height: 44px;
       }
 
       .gantt-bar {
-        font-size: 9px;
-        height: 22px;
-        padding: 0 2px;
+        font-size: 10px;
+        height: 26px;
+        padding: 0 3px;
       }
 
+      .bar-row {
+        min-height: 44px;
+      }
+
+      /* 상세 패널 - 전체 너비 */
       .detail-panel {
         width: 100%;
         right: -100%;
+      }
+
+      .detail-panel.open {
+        right: 0;
       }
 
       .detail-header {
@@ -1643,6 +1657,16 @@
 
       .detail-actions {
         padding: 14px;
+      }
+
+      /* 채팅 패널 - 전체 너비 */
+      .chat-panel {
+        width: 100% !important;
+        right: -100% !important;
+      }
+
+      .chat-panel.open {
+        right: 0 !important;
       }
 
       /* 프로젝트별 테이블 */
@@ -1661,27 +1685,64 @@
       }
     }
 
-    /* 모바일 (480px 이하) */
+    /* ===== 모바일 (480px 이하) ===== */
     @media (max-width: 480px) {
+      body {
+        font-size: 13px;
+      }
+
+      .header {
+        padding: 6px 10px;
+      }
+
+      .header-top {
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
       .header-title {
         font-size: 15px;
+        gap: 6px;
       }
 
       .header-title #syncStatus {
         display: none;
       }
 
-      .tabs {
-        padding: 0 4px;
+      .header-controls {
+        gap: 4px;
       }
+
+      .header-controls .btn {
+        padding: 6px 8px;
+        font-size: 11px;
+      }
+
+      .search-input {
+        font-size: 13px;
+        padding: 8px 10px;
+      }
+
+      /* 탭바 - 스크롤 가능, 밑줄 스타일 */
+      .tabs {
+        padding: 0;
+        gap: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .tabs::-webkit-scrollbar { display: none; }
 
       .tab {
-        padding: 8px 10px;
-        font-size: 12px;
+        padding: 10px 14px;
+        font-size: 13px;
+        white-space: nowrap;
+        flex-shrink: 0;
       }
 
+      /* 간트 차트 - 프로젝트 이름 영역 */
       .gantt-names {
-        width: 110px;
+        width: 140px;
       }
 
       .gantt-names-header {
@@ -1692,23 +1753,24 @@
 
       .name-row {
         font-size: 11px;
-        padding: 4px 6px;
-        min-height: 42px;
+        padding: 5px 6px;
+        min-height: 44px;
       }
 
       .name-row.tier-header {
         font-size: 10px;
-        padding: 3px 6px;
+        padding: 4px 6px;
+        min-height: 28px;
       }
 
       .gantt-bar {
         font-size: 9px;
-        height: 24px;
+        height: 22px;
         border-radius: 3px;
       }
 
       .bar-row {
-        min-height: 42px;
+        min-height: 44px;
       }
 
       .month-header {
@@ -1719,8 +1781,14 @@
         font-size: 8px;
       }
 
-      .view-toggle .btn {
+      /* 간트 툴바 */
+      .gantt-toolbar {
         padding: 4px 8px;
+        gap: 4px;
+      }
+
+      .view-toggle .btn {
+        padding: 5px 10px;
         font-size: 11px;
       }
 
@@ -1735,22 +1803,131 @@
         width: 32px;
       }
 
-      .modal {
-        width: 95%;
-        padding: 16px;
+      /* 상세 패널 */
+      .detail-panel {
+        width: 100%;
+        right: -100%;
       }
 
-      .modal-title {
-        font-size: 14px;
+      .detail-header {
+        padding: 12px;
       }
 
       .detail-title {
+        font-size: 15px;
+      }
+
+      .detail-body {
+        padding: 12px;
+      }
+
+      .detail-actions {
+        padding: 10px 12px;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .detail-actions .btn {
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+        padding: 10px 8px;
+        font-size: 13px;
+      }
+
+      .detail-section {
+        margin-bottom: 12px;
+      }
+
+      .detail-input, .detail-section select, .detail-section textarea {
+        font-size: 14px !important;
+        padding: 10px !important;
+      }
+
+      /* 채팅 패널 - 전체 화면 */
+      .chat-panel {
+        width: 100% !important;
+        right: -100% !important;
+      }
+
+      .chat-panel.open {
+        right: 0 !important;
+      }
+
+      .chat-tabs {
+        gap: 0;
+      }
+
+      .chat-tab {
+        padding: 10px;
+        font-size: 13px;
+        flex: 1;
+        text-align: center;
+      }
+
+      /* 모달 */
+      .modal {
+        width: 95%;
+        max-width: none;
+        padding: 16px;
+        max-height: 85vh;
+      }
+
+      .modal-title {
+        font-size: 15px;
+      }
+
+      /* 로그인 */
+      .login-card {
+        padding: 28px 20px;
+        margin: 16px;
+        width: calc(100% - 32px);
+        max-width: none;
+      }
+
+      .login-btn {
         font-size: 14px;
+        padding: 14px 20px;
+      }
+
+      /* 프로젝트 테이블 */
+      .table-container table {
+        min-width: 600px;
       }
 
       select, .btn {
-        padding: 6px 8px;
+        padding: 8px 10px;
         font-size: 12px;
+      }
+
+      /* 유저 헤더 */
+      #userNameDisplay {
+        display: none;
+      }
+    }
+
+    /* ===== 극소형 모바일 (360px 이하) ===== */
+    @media (max-width: 360px) {
+      .header-title {
+        font-size: 13px;
+      }
+
+      .gantt-names {
+        width: 110px;
+      }
+
+      .name-row {
+        font-size: 10px;
+        padding: 4px 4px;
+      }
+
+      .tab {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      .login-card {
+        padding: 24px 16px;
       }
     }
   </style>
