@@ -238,10 +238,10 @@
     }
 
     .name-row {
-      padding: 6px 12px;
+      padding: 8px 12px;
       border-bottom: 1px solid #e5e7eb;
-      font-size: 12px;
-      min-height: 36px;
+      font-size: 13px;
+      min-height: 48px;
       display: flex;
       align-items: center;
       cursor: pointer;
@@ -377,7 +377,7 @@
     }
 
     .bar-row {
-      min-height: 36px;
+      min-height: 48px;
       border-bottom: 1px solid #e5e7eb;
       position: relative;
       display: flex;
@@ -450,10 +450,10 @@
 
     .gantt-bar {
       position: absolute;
-      height: 24px;
-      border-radius: 3px;
+      height: 30px;
+      border-radius: 4px;
       cursor: move;
-      font-size: 10px;
+      font-size: 11px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1691,9 +1691,9 @@
       }
 
       .name-row {
-        font-size: 10px;
-        padding: 3px 6px;
-        min-height: 36px;
+        font-size: 11px;
+        padding: 4px 6px;
+        min-height: 42px;
       }
 
       .name-row.tier-header {
@@ -1702,13 +1702,13 @@
       }
 
       .gantt-bar {
-        font-size: 8px;
-        height: 20px;
-        border-radius: 2px;
+        font-size: 9px;
+        height: 24px;
+        border-radius: 3px;
       }
 
       .bar-row {
-        height: 36px;
+        min-height: 42px;
       }
 
       .month-header {
@@ -5034,6 +5034,15 @@
         curDate = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate() + 1);
       }
 
+      // 오늘 이전(과거) 영역 음영 처리
+      var pastDays = daysSinceStart(TODAY);
+      if (pastDays > 0) {
+        var pastShade = document.createElement('div');
+        pastShade.style.cssText = 'position:absolute;top:0;bottom:0;left:0;background:rgba(0,0,0,0.04);pointer-events:none;z-index:0;';
+        pastShade.style.width = (pastDays * dayW) + 'px';
+        gridContainer.appendChild(pastShade);
+      }
+
       const barsContainer = document.getElementById('barsContainer');
       barsContainer.insertBefore(gridContainer, barsContainer.firstChild);
 
@@ -5081,7 +5090,7 @@
         barRows.forEach(function(br) {
           if (br._pairedNameRow) {
             var h = br._pairedNameRow.offsetHeight;
-            if (h > 36) br.style.height = h + 'px';
+            if (h > 48) br.style.height = h + 'px';
           }
         });
       });
@@ -5201,7 +5210,7 @@
           // 1행: 프로젝트 ID + 이름 + GMV
           const topLine = document.createElement('div');
           topLine.style.cssText = 'display:flex;align-items:center;gap:4px;width:100%;';
-          topLine.innerHTML = '<span style="font-weight:600;flex-shrink:0;font-size:12px;">' + project.id + '</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;">' + shortName + '</span>' + (project.gmvImpact ? '<span class="gmv-badge" style="font-size:9px;">' + project.gmvImpact + '</span>' : '');
+          topLine.innerHTML = '<span style="font-weight:600;flex-shrink:0;font-size:13px;">' + project.id + '</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">' + shortName + '</span>' + (project.gmvImpact ? '<span class="gmv-badge" style="font-size:10px;">' + project.gmvImpact + '</span>' : '');
           topLine.onclick = function() { openDetailPanel(project.id); };
           topLine.style.cursor = 'pointer';
 
@@ -5218,7 +5227,7 @@
 
           // 3행: 날짜 + 배포일 + 채팅버튼
           var bottomLine = document.createElement('div');
-          bottomLine.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%;font-size:10px;color:#9ca3af;';
+          bottomLine.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%;font-size:11px;color:#9ca3af;';
           bottomLine.innerHTML = '<span>' + startStr + ' ~ ' + endStr + '</span>' + (deployStr ? '<span style="color:#f97316;font-weight:600;" title="배포일">🚀' + deployStr + '</span>' : '');
 
           // 채팅 버튼 (읽지 않은 메시지 / 멘션 표기)
