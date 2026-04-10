@@ -2007,7 +2007,7 @@
     <!-- Header -->
     <div class="header">
       <div class="header-top">
-        <div class="header-title"><span class="af-logo-text">about<br>fishing</span><span style="font-size:15px;font-weight:500;color:#6b7280;margin-left:12px;">스케줄 대시보드</span> <span id="syncStatus" style="font-size: 11px; font-weight: 400; padding: 2px 8px; border-radius: 10px; margin-left: 4px; background: #f3f4f6; color: #9ca3af;">로컬</span></div>
+        <div class="header-title"><span class="af-logo-text">about<br>fishing</span><span style="font-size:15px;font-weight:500;color:#6b7280;margin-left:12px;">스케줄 대시보드</span> <span id="syncStatus" style="font-size: 11px; font-weight: 400; padding: 2px 8px; border-radius: 10px; margin-left: 4px; background: #f3f4f6; color: #9ca3af;">로컬</span> <span id="deployVersion" style="font-size: 10px; font-weight: 400; color: #9ca3af; margin-left: 6px;" title="최종 배포 버전">v2026.04.10 21:30</span></div>
         <div class="header-controls">
           <input type="text" class="search-input" id="searchInput" placeholder="검색...">
           <div class="filter-group">
@@ -4765,6 +4765,14 @@
       tierOrder.forEach(tier => {
         const projects = grouped[tier];
         if (projects.length === 0) return;
+        // 완료/Deprecated 프로젝트를 그룹 내 최하단으로 정렬
+        projects.sort(function(a, b) {
+          var aDone = a.status === '완료' || a.status === 'Deprecated';
+          var bDone = b.status === '완료' || b.status === 'Deprecated';
+          if (aDone && !bDone) return 1;
+          if (!aDone && bDone) return -1;
+          return 0;
+        });
 
         // Tier header — use createElement to avoid innerHTML += destroying event handlers
         const tierColor = TIER_COLORS[tier] || '#6b7280';
@@ -5857,8 +5865,14 @@
     function getSortedProjects(projects) {
       const tierRank = { CRITICAL: 0, TIER1: 1, TIER2: 2, TIER3: 3, TIER4: 4, CONTINUOUS: 5 };
       const statusRank = { '진행': 0, '대기': 1, '연기': 2, '완료': 3, 'Deprecated': 4 };
+      const _isDone = function(p) { return p.status === '완료' || p.status === 'Deprecated'; };
       const sorted = projects.slice();
       sorted.sort(function(a, b) {
+        // 완료/Deprecated는 정렬 기준과 무관하게 항상 최하단
+        var aDone = _isDone(a), bDone = _isDone(b);
+        if (aDone && !bDone) return 1;
+        if (!aDone && bDone) return -1;
+
         switch (_projectSortKey) {
           case 'tier': return (tierRank[a.tier] || 99) - (tierRank[b.tier] || 99);
           case 'name': return a.name.localeCompare(b.name, 'ko');
@@ -5925,7 +5939,7 @@
       const phaseData = project.phases[phase];
       const assignees = (project.assignments[phase] || []).map(id => {
         const m = getTeamMember(id);
-        return m ? m.name.charAt(0) + m.name.charAt(m.name.length - 1) : id;
+        return m ? m.name : id;
       }).join(' ');
       if (!phaseData || !phaseData.start) {
         return `<span style="color: #bbb; font-size: 12px;">+ 등록</span>`;
