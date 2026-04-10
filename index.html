@@ -6404,7 +6404,15 @@
     }
 
     function renderOverview() {
+      try {
+      console.log('[renderOverview] called, projects:', state.projects.length);
       var all = state.projects;
+      if (!all || all.length === 0) {
+        var el = document.getElementById('overviewContent');
+        if (el) el.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:60px 0;font-size:14px;">프로젝트 데이터 로딩 중...</div>';
+        console.log('[renderOverview] no projects yet');
+        return;
+      }
       var today = new Date(); today.setHours(0,0,0,0);
       var inProgress = all.filter(function(p) { return p.status === '진행'; }).length;
       var completed = all.filter(function(p) { return p.status === '완료'; }).length;
@@ -6644,7 +6652,14 @@
       html += '</div>';
       html += '</div>';
 
-      document.getElementById('overviewContent').innerHTML = html;
+      var overviewEl = document.getElementById('overviewContent');
+      console.log('[renderOverview] overviewEl found:', !!overviewEl, 'html length:', html.length);
+      if (overviewEl) overviewEl.innerHTML = html;
+      } catch(err) {
+        console.error('[renderOverview] ERROR:', err);
+        var el = document.getElementById('overviewContent');
+        if (el) el.innerHTML = '<div style="color:red;padding:20px;">개요 렌더링 오류: ' + err.message + '</div>';
+      }
     }
 
     function editDeployDate(projectId, td) {
