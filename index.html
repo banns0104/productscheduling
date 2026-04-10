@@ -2573,6 +2573,8 @@
             pushAccessLog('로그인');
             loadHistory();
             loadAccessLogs();
+            // 딥링크 처리 (URL에 #project=XX 있으면 해당 프로젝트 열기)
+            setTimeout(_handleDeepLink, 500);
           } else {
             firebase.auth().signOut();
             showLoginScreen();
@@ -5637,9 +5639,61 @@
     }
 
     /* ========== UI FUNCTIONS ========== */
+    // === 딥링크 시스템 ===
+    function _setHash(projectId) {
+      if (projectId) {
+        history.replaceState(null, '', '#project=' + projectId);
+      } else {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+    function _getHashProjectId() {
+      var hash = window.location.hash;
+      var m = hash.match(/^#project=([A-Za-z0-9_]+)/);
+      return m ? m[1] : null;
+    }
+    function _handleDeepLink() {
+      var pid = _getHashProjectId();
+      if (!pid) return;
+      // 프로젝트가 로드될 때까지 약간의 지연
+      var attempts = 0;
+      function tryOpen() {
+        var proj = state.projects.find(function(p) { return p.id === pid; });
+        if (proj) {
+          openDetailPanel(pid);
+        } else if (attempts < 10) {
+          attempts++;
+          setTimeout(tryOpen, 300);
+        }
+      }
+      tryOpen();
+    }
+    function copyProjectLink(projectId) {
+      var url = window.location.origin + window.location.pathname + '#project=' + projectId;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function() {
+          _showToast('링크가 복사되었습니다');
+        }).catch(function() {
+          _fallbackCopyLink(url);
+        });
+      } else {
+        _fallbackCopyLink(url);
+      }
+    }
+    function _fallbackCopyLink(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;top:-9999px;';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); _showToast('링크가 복사되었습니다'); } catch(e) { _showToast('복사 실패 — URL을 직접 복사해주세요'); }
+      document.body.removeChild(ta);
+    }
+
     function openDetailPanel(projectId) {
       state.selectedProject = state.projects.find(p => p.id === projectId);
       if (!state.selectedProject) return;
+      _setHash(projectId);
 
       const panel = document.getElementById('detailPanel');
       const title = document.getElementById('detailTitle');
@@ -5665,7 +5719,7 @@
         if (ends.length) scheduleEnd = ends[ends.length - 1];
       }
 
-      title.textContent = p.name;
+      title.innerHTML = p.name + ' <button onclick="copyProjectLink(\'' + p.id + '\')" style="border:none;background:#eef2ff;color:#6366f1;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;font-weight:600;vertical-align:middle;margin-left:8px;" title="이 프로젝트 링크 복사">🔗 링크 복사</button>';
       body.innerHTML = `
         <!-- 요약 카드 -->
         <div style="background: linear-gradient(135deg, ${tierColor}08, ${tierColor}15); border: 1px solid ${tierColor}30; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
@@ -5821,6 +5875,7 @@
       document.getElementById('panelBackdrop').classList.remove('open');
       _unlockBodyScroll();
       state.selectedProject = null;
+      _setHash(null);
       if (state.isCreating) {
         state.isCreating = false;
         restoreDetailActions();
@@ -7450,6 +7505,7 @@
     }
 
     window.openDetailPanel = openDetailPanel;
+    window.copyProjectLink = copyProjectLink;
     window.closeDetailPanel = closeDetailPanel;
     window.saveDetail = saveDetail;
     window.deleteProject = deleteProject;
