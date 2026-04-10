@@ -1988,7 +1988,7 @@
       </div>
       <div class="login-logo"><span class="af-logo-text" style="font-size:32px;">about<br>fishing</span></div>
       <div class="login-subtitle">Project Scheduling Dashboard</div>
-      <div class="login-divider"><span>@aboutfishing.kr 계정으로 로그인</span></div>
+      <div class="login-divider"><span>허용된 Google 계정으로 로그인</span></div>
       <button class="login-btn" id="googleLoginBtn" onclick="loginWithGoogle()">
         <svg width="20" height="20" viewBox="0 0 48 48">
           <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -2308,16 +2308,83 @@
     }
 
     const TEAM = [
-      { id: 'seo', name: '서현일', role: 'CPO', color: '#6366f1' },
-      { id: 'koo', name: '구범모', role: 'PM', color: '#8b5cf6' },
-      { id: 'kim_hc', name: '김현철', role: 'CDO', color: '#a855f7' },
-      { id: 'jung', name: '정지섭', role: '웹 프론트엔드 파트장', color: '#06b6d4' },
-      { id: 'shin', name: '신진섭', role: '웹/앱 프론트엔드', color: '#0891b2' },
-      { id: 'choi', name: '최상수', role: '백엔드/인프라', color: '#10b981' },
-      { id: 'kang', name: '강상배', role: '백엔드/인프라', color: '#059669' },
-      { id: 'song', name: '송창석', role: '웹 프론트엔드', color: '#0ea5e9' },
-    { id: 'kim_cr', name: '김채린', role: 'QA', color: '#f43f5e' }
+      { id: 'seo', name: '서현일', role: 'CPO (PM겸임)', color: '#6366f1', email: 'hiseo@aboutfishing.kr' },
+      { id: 'koo', name: '구범모', role: '서비스기획/PM', color: '#8b5cf6', email: 'bmkoo@aboutfishing.kr' },
+      { id: 'kim_hc', name: '김현철', role: 'CDO', color: '#a855f7', email: '' },
+      { id: 'jung', name: '정지섭', role: '웹 프론트엔드', color: '#06b6d4', email: 'jsjung@aboutfishing.kr' },
+      { id: 'shin', name: '신진섭', role: '웹/앱 프론트엔드', color: '#0891b2', email: 'jsshin@aboutfishing.kr' },
+      { id: 'choi', name: '최상수', role: '백엔드/인프라', color: '#10b981', email: 'sschoi@aboutfishing.kr' },
+      { id: 'kang', name: '강상배', role: '백엔드/인프라', color: '#059669', email: 'sbkang@aboutfishing.kr' },
+      { id: 'song', name: '송창석', role: '웹 프론트엔드', color: '#0ea5e9', email: 'songcs0329@gmail.com' },
+      { id: 'kim_cr', name: '김채린', role: 'QA', color: '#f43f5e', email: '' }
     ];
+
+    // 로그인 허용 예외 이메일 목록 (aboutfishing.kr 외)
+    var _allowedEmails = ['songcs0329@gmail.com'];
+    function _loadAllowedEmails() {
+      try { var saved = localStorage.getItem('af_allowed_emails'); if (saved) _allowedEmails = JSON.parse(saved); } catch(e) {}
+    }
+    function _saveAllowedEmails() { localStorage.setItem('af_allowed_emails', JSON.stringify(_allowedEmails)); }
+
+    // 팀원 접속 상태 (Firebase에 저장)
+    var _memberPresence = {}; // { memberId: { online: bool, lastSeen: timestamp, email: '', displayName: '' } }
+
+    function _getLinkedMember(email) {
+      if (!email) return null;
+      return TEAM.find(function(m) { return m.email && m.email.toLowerCase() === email.toLowerCase(); }) || null;
+    }
+
+    function _isEmailAllowed(email) {
+      if (!email) return false;
+      if (email.endsWith('@aboutfishing.kr')) return true;
+      return _allowedEmails.some(function(e) { return e.toLowerCase() === email.toLowerCase(); });
+    }
+
+    function _updatePresence(memberId, online) {
+      if (!_fb.db || !memberId) return;
+      var data = { online: online, lastSeen: Date.now() };
+      if (state.currentUser) {
+        data.email = state.currentUser.email || '';
+        data.displayName = state.currentUser.displayName || '';
+      }
+      _fb.db.ref('presence/' + memberId).update(data);
+    }
+
+    function _loadPresence() {
+      if (!_fb.db) return;
+      _fb.db.ref('presence').on('value', function(snap) {
+        _memberPresence = snap.val() || {};
+        if (state.currentTab === 'team') renderTeam();
+      });
+    }
+
+    function _getCurrentMemberName() {
+      if (!state.currentUser) return '(알 수 없음)';
+      var linked = _getLinkedMember(state.currentUser.email);
+      return linked ? linked.name : (state.currentUser.displayName || state.currentUser.email);
+    }
+
+    // 강제 로그아웃 (세션 만료) 시스템
+    function _revokeSession(memberId) {
+      if (!_fb.db) return;
+      _fb.db.ref('presence/' + memberId).update({ revoked: Date.now() });
+      _showToast('세션 만료 처리됨');
+    }
+
+    function _startSessionCheck() {
+      if (!_fb.db || !state.currentUser || !state.currentUser.memberId) return;
+      var myId = state.currentUser.memberId;
+      // 실시간으로 revoked 감지
+      _fb.db.ref('presence/' + myId + '/revoked').on('value', function(snap) {
+        var revokedAt = snap.val();
+        if (revokedAt && revokedAt > (state.currentUser._loginTime || 0)) {
+          // 내 세션이 만료됨 → 강제 로그아웃
+          alert('관리자에 의해 세션이 만료되었습니다. 다시 로그인해주세요.');
+          _fb.db.ref('presence/' + myId + '/revoked').off();
+          logoutUser();
+        }
+      });
+    }
 
     const PHASE_COLORS = {
       plan: '#6366f1',
@@ -2436,26 +2503,44 @@
       }
 
       // Auth 상태 감지 - 이것 하나로 모든 케이스 처리
+      _loadAllowedEmails();
       firebase.auth().onAuthStateChanged(function(user) {
         _authReady = true;
         if (user) {
           console.log('Auth: user signed in -', user.email);
-          if (user.email && user.email.endsWith('@aboutfishing.kr')) {
+          if (user.email && _isEmailAllowed(user.email)) {
             state.currentUser = {
               uid: user.uid,
               email: user.email,
               displayName: user.displayName || user.email.split('@')[0],
               photoURL: user.photoURL
             };
+            state.currentUser._loginTime = Date.now();
+            // TEAM 멤버 자동 연동
+            var linked = _getLinkedMember(user.email);
+            if (linked) {
+              state.currentUser.memberId = linked.id;
+              state.currentUser.memberName = linked.name;
+              _updatePresence(linked.id, true);
+              // 브라우저 닫을 때 오프라인 처리
+              window.addEventListener('beforeunload', function() { _updatePresence(linked.id, false); });
+              // 세션 만료 감시 시작
+              setTimeout(_startSessionCheck, 1000);
+            }
+            _loadPresence();
             updateUserHeader();
             hideLoginScreen();
           } else {
             firebase.auth().signOut();
             showLoginScreen();
-            showLoginError('aboutfishing.kr 계정만 접근 가능합니다');
+            showLoginError('접근 권한이 없습니다. aboutfishing.kr 계정 또는 허용된 계정으로 로그인해주세요.');
           }
         } else {
           console.log('Auth: no user, showing login');
+          // 이전 연동 멤버 오프라인 처리
+          if (state.currentUser && state.currentUser.memberId) {
+            _updatePresence(state.currentUser.memberId, false);
+          }
           state.currentUser = null;
           showLoginScreen();
         }
@@ -2657,8 +2742,10 @@
           _roomState[proj.id].lastMsgTime = msg.timestamp || 0;
           _roomState[proj.id].lastSender = msg.displayName || '';
           // If not currently viewing this room, increment unread + send browser notification
-          if (state.selectedProjectChat !== proj.id || !document.getElementById('projectRoomView').style.display || document.getElementById('projectRoomView').style.display === 'none') {
-            if (msg.uid !== state.currentUser.uid) {
+          var roomView = document.getElementById('projectRoomView');
+          var roomHidden = !roomView || !roomView.style.display || roomView.style.display === 'none';
+          if (state.selectedProjectChat !== proj.id || roomHidden) {
+            if (state.currentUser && msg.uid !== state.currentUser.uid) {
               _roomState[proj.id].unread = (_roomState[proj.id].unread || 0) + 1;
               if (checkMentionInMessage(msg.text)) _roomState[proj.id].hasMention = true;
               // Update global chat badge + browser notification
@@ -3096,6 +3183,11 @@
         document.getElementById('globalChatInput').style.display = 'none';
         document.getElementById('projectChatDisabled').style.display = 'block';
         document.getElementById('projectChatInput').style.display = 'none';
+      } else {
+        document.getElementById('globalChatDisabled').style.display = 'none';
+        document.getElementById('globalChatInput').style.display = '';
+        document.getElementById('projectChatDisabled').style.display = 'none';
+        document.getElementById('projectChatInput').style.display = '';
       }
     }
 
@@ -3356,19 +3448,57 @@
       overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
       const modal = document.createElement('div');
       modal.className = 'modal';
-      modal.style.maxWidth = '600px';
-      modal.style.maxHeight = '80vh';
+      modal.style.maxWidth = '700px';
+      modal.style.maxHeight = '85vh';
       modal.style.overflow = 'auto';
       function renderMemberList() {
+        var presenceInfo = '';
+        TEAM.forEach(function(m) {
+          var p = _memberPresence[m.id];
+          var statusDot = p && p.online ? '<span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;" title="온라인"></span>' : '<span style="width:8px;height:8px;border-radius:50%;background:#d1d5db;display:inline-block;" title="오프라인"></span>';
+          var lastSeen = p && p.lastSeen ? _formatRelativeTime(p.lastSeen) : '기록 없음';
+          presenceInfo = '';
+        });
+
         modal.innerHTML = '<h3 style="margin-bottom:16px;font-size:16px;font-weight:700;">팀원 관리</h3>' +
-          TEAM.map((m, i) => '<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6;">' +
-            '<div style="width:32px;height:32px;border-radius:50%;background:' + m.color + ';display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;">' + m.name.substring(0,1) + '</div>' +
-            '<input type="text" value="' + m.name + '" style="flex:1;padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;font-size:13px;" data-member-field="name" data-member-idx="' + i + '">' +
-            '<input type="text" value="' + m.role + '" style="width:120px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;font-size:13px;" data-member-field="role" data-member-idx="' + i + '">' +
-            '<input type="color" value="' + m.color + '" style="width:36px;height:30px;border:none;cursor:pointer;" data-member-field="color" data-member-idx="' + i + '">' +
-            '<button onclick="removeMember(' + i + ')" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:16px;" title="삭제">×</button>' +
-          '</div>').join('') +
-          '<div style="margin-top:12px;display:flex;gap:8px;">' +
+          TEAM.map((m, i) => {
+            var p = _memberPresence[m.id];
+            var onlineDot = p && p.online ? '🟢' : '⚪';
+            var lastSeenStr = p && p.lastSeen ? _formatRelativeTime(p.lastSeen) : '';
+            return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;">' +
+              '<div style="width:32px;height:32px;border-radius:50%;background:' + m.color + ';display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;flex-shrink:0;">' + m.name.substring(0,1) + '</div>' +
+              '<div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:200px;">' +
+                '<div style="display:flex;gap:6px;align-items:center;">' +
+                  '<input type="text" value="' + m.name + '" style="width:80px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;font-size:13px;font-weight:600;" data-member-field="name" data-member-idx="' + i + '">' +
+                  '<input type="text" value="' + m.role + '" style="width:130px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;color:#6b7280;" data-member-field="role" data-member-idx="' + i + '">' +
+                  '<input type="color" value="' + m.color + '" style="width:28px;height:28px;border:none;cursor:pointer;" data-member-field="color" data-member-idx="' + i + '">' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;align-items:center;">' +
+                  '<input type="email" value="' + (m.email || '') + '" placeholder="Google 계정 이메일" style="flex:1;padding:3px 8px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;color:#6b7280;" data-member-field="email" data-member-idx="' + i + '">' +
+                  '<span style="font-size:11px;white-space:nowrap;" title="접속 상태">' + onlineDot + '</span>' +
+                  (lastSeenStr ? '<span style="font-size:10px;color:#9ca3af;white-space:nowrap;">' + lastSeenStr + '</span>' : '') +
+                  (p && p.online ? '<button onclick="_revokeSession(\'' + m.id + '\')" style="border:none;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;" title="이 사용자를 강제 로그아웃 시킵니다">세션 만료</button>' : '') +
+                '</div>' +
+              '</div>' +
+              '<button onclick="removeMember(' + i + ')" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:16px;flex-shrink:0;" title="삭제">×</button>' +
+            '</div>';
+          }).join('') +
+          '<div style="margin-top:16px;padding-top:16px;border-top:2px solid #e5e7eb;">' +
+            '<h4 style="font-size:13px;font-weight:700;margin-bottom:8px;color:#6b7280;">로그인 허용 예외 이메일 (aboutfishing.kr 외)</h4>' +
+            '<div id="allowedEmailsList">' +
+              _allowedEmails.map(function(e, i) {
+                return '<div style="display:flex;gap:6px;align-items:center;padding:4px 0;">' +
+                  '<span style="flex:1;font-size:12px;color:#374151;">' + e + '</span>' +
+                  '<button onclick="_removeAllowedEmail(' + i + ')" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:14px;" title="삭제">×</button>' +
+                '</div>';
+              }).join('') +
+            '</div>' +
+            '<div style="display:flex;gap:6px;margin-top:6px;">' +
+              '<input type="email" id="newAllowedEmail" placeholder="예외 이메일 추가 (예: user@gmail.com)" style="flex:1;padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;">' +
+              '<button onclick="_addAllowedEmail()" class="btn" style="font-size:11px;padding:4px 10px;">추가</button>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-top:16px;display:flex;gap:8px;">' +
             '<button onclick="addNewMember()" class="btn" style="font-size:13px;">+ 팀원 추가</button>' +
             '<button onclick="saveMemberChanges()" class="btn" style="font-size:13px;background:#10b981;">저장</button>' +
             '<button onclick="document.getElementById(\'memberMgmtOverlay\').remove()" class="btn btn-secondary" style="font-size:13px;">닫기</button>' +
@@ -3379,9 +3509,39 @@
       document.body.appendChild(overlay);
     }
 
+    function _addAllowedEmail() {
+      var input = document.getElementById('newAllowedEmail');
+      var email = (input.value || '').trim().toLowerCase();
+      if (!email || !email.includes('@')) { _showToast('유효한 이메일을 입력해주세요'); return; }
+      if (_allowedEmails.some(function(e) { return e.toLowerCase() === email; })) { _showToast('이미 추가된 이메일입니다'); return; }
+      _allowedEmails.push(email);
+      _saveAllowedEmails();
+      document.getElementById('memberMgmtOverlay')?.remove();
+      openMemberManagement();
+      _showToast(email + ' 추가됨');
+    }
+
+    function _removeAllowedEmail(idx) {
+      var removed = _allowedEmails.splice(idx, 1);
+      _saveAllowedEmails();
+      document.getElementById('memberMgmtOverlay')?.remove();
+      openMemberManagement();
+      _showToast((removed[0] || '') + ' 제거됨');
+    }
+
+    function _formatRelativeTime(ts) {
+      var diff = Date.now() - ts;
+      if (diff < 60000) return '방금';
+      if (diff < 3600000) return Math.floor(diff / 60000) + '분 전';
+      if (diff < 86400000) return Math.floor(diff / 3600000) + '시간 전';
+      if (diff < 604800000) return Math.floor(diff / 86400000) + '일 전';
+      var d = new Date(ts);
+      return (d.getMonth()+1) + '/' + d.getDate();
+    }
+
     function addNewMember() {
       const newId = 'member_' + Date.now();
-      TEAM.push({ id: newId, name: '새 팀원', role: '역할', color: '#6b7280' });
+      TEAM.push({ id: newId, name: '새 팀원', role: '역할', color: '#6b7280', email: '' });
       document.getElementById('memberMgmtOverlay')?.remove();
       openMemberManagement();
     }
@@ -3399,7 +3559,14 @@
       document.querySelectorAll('[data-member-field]').forEach(input => {
         const idx = parseInt(input.dataset.memberIdx);
         const field = input.dataset.memberField;
-        if (TEAM[idx]) TEAM[idx][field] = input.value;
+        if (TEAM[idx]) TEAM[idx][field] = input.value.trim();
+      });
+      // 이메일이 새로 연결된 경우 허용 목록에 자동 추가 (aboutfishing.kr 외)
+      TEAM.forEach(function(m) {
+        if (m.email && !m.email.endsWith('@aboutfishing.kr') && !_allowedEmails.some(function(e) { return e.toLowerCase() === m.email.toLowerCase(); })) {
+          _allowedEmails.push(m.email.toLowerCase());
+          _saveAllowedEmails();
+        }
       });
       localStorage.setItem('af_team', JSON.stringify(TEAM));
       document.getElementById('memberMgmtOverlay')?.remove();
@@ -3423,7 +3590,8 @@
         projectId: projectId,
         field: field,
         oldValue: oldVal,
-        newValue: newVal
+        newValue: newVal,
+        user: _getCurrentMemberName()
       };
       state.history.push(entry);
       localStorage.setItem('af_history', JSON.stringify(state.history));
@@ -3575,56 +3743,8 @@
     "complexity": 4,
     "dependency": 8,
     "deps": [],
-    "assignments": {
-      "plan": [
-        "seo",
-        "koo"
-      ],
-      "design": [],
-      "front": [
-        "shin"
-      ],
-      "back": [
-        "kang"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-05-13",
-        "end": "2026-05-20",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "",
-        "end": ""
-      },
-      "front": {
-        "start": "2026-07-09",
-        "end": "2026-07-23",
-        "members": [
-          "정지섭"
-        ]
-      },
-      "back": {
-        "start": "2026-07-24",
-        "end": "2026-08-07",
-        "members": [
-          "강상배"
-        ]
-      },
-      "qa": {
-        "start": "2026-08-10",
-        "end": "2026-08-14",
-        "members": [
-          "신진섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["seo", "koo"], "design": [], "front": ["shin"], "back": ["kang"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-05-04", "end": "2026-05-12", "members": ["서현일", "구범모"]}, "design": {"start": "", "end": "", "members": []}, "front": {"start": "2026-07-09", "end": "2026-07-23", "members": ["신진섭"]}, "back": {"start": "2026-07-24", "end": "2026-08-07", "members": ["강상배"]}, "qa": {"start": "2026-08-10", "end": "2026-08-14", "members": ["김채린"]}},
     "deployDate": "2026-05-18",
     "status": "대기",
     "continuous": false,
@@ -3647,60 +3767,8 @@
     "deps": [
       "P01"
     ],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-08-17",
-        "end": "2026-08-24",
-        "members": [
-          "구범모"
-        ]
-      },
-      "design": {
-        "start": "2026-08-25",
-        "end": "2026-09-01",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-09-02",
-        "end": "2026-09-14",
-        "members": [
-          "정지섭"
-        ]
-      },
-      "back": {
-        "start": "2026-09-15",
-        "end": "2026-09-25",
-        "members": [
-          "강상배"
-        ]
-      },
-      "qa": {
-        "start": "2026-09-28",
-        "end": "2026-10-02",
-        "members": [
-          "정지섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": ["kim_hc"], "front": ["jung"], "back": ["choi"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-08-18", "end": "2026-08-24", "members": ["구범모"]}, "design": {"start": "2026-08-25", "end": "2026-09-01", "members": ["김현철"]}, "front": {"start": "2026-09-02", "end": "2026-09-14", "members": ["정지섭"]}, "back": {"start": "2026-10-02", "end": "2026-10-19", "members": ["최상수"]}, "qa": {"start": "2026-10-20", "end": "2026-10-26", "members": ["김채린"]}},
     "deployDate": "2026-10-12",
     "status": "대기",
     "continuous": false,
@@ -3723,63 +3791,8 @@
     "deps": [
       "P02"
     ],
-    "assignments": {
-      "plan": [
-        "seo",
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung",
-        "shin"
-      ],
-      "back": [
-        "choi",
-        "kang"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-10-05",
-        "end": "2026-10-13",
-        "members": [
-          "구범모"
-        ]
-      },
-      "design": {
-        "start": "2026-10-26",
-        "end": "2026-11-02",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-11-03",
-        "end": "2026-11-17",
-        "members": [
-          "정지섭"
-        ]
-      },
-      "back": {
-        "start": "2026-12-04",
-        "end": "2026-12-18",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "2026-12-21",
-        "end": "2026-12-25",
-        "members": [
-          "신진섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["seo", "koo"], "design": ["kim_hc"], "front": ["jung"], "back": ["choi"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-11-20", "end": "2026-11-25", "members": ["서현일", "구범모"]}, "design": {"start": "2026-12-02", "end": "2026-12-09", "members": ["김현철"]}, "front": {"start": "2026-12-15", "end": "2026-12-30", "members": ["정지섭"]}, "back": {"start": "2027-01-26", "end": "2027-02-12", "members": ["최상수"]}, "qa": {"start": "2027-02-15", "end": "2027-02-18", "members": ["김채린"]}},
     "deployDate": "2026-11-23",
     "status": "대기",
     "continuous": false,
@@ -3803,60 +3816,8 @@
     "deps": [
       "P06"
     ],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "jung"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-05-19",
-        "end": "2026-05-28",
-        "members": [
-          "구범모"
-        ]
-      },
-      "design": {
-        "start": "2026-05-29",
-        "end": "2026-06-08",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-07-22",
-        "end": "2026-08-07",
-        "members": [
-          "송창석"
-        ]
-      },
-      "back": {
-        "start": "2026-08-10",
-        "end": "2026-08-26",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "2026-08-27",
-        "end": "2026-09-02",
-        "members": [
-          "신진섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": ["kim_hc"], "front": ["jung"], "back": ["kang"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-05-13", "end": "2026-05-21", "members": ["구범모"]}, "design": {"start": "2026-05-22", "end": "2026-06-02", "members": ["김현철"]}, "front": {"start": "2026-07-09", "end": "2026-07-27", "members": ["정지섭"]}, "back": {"start": "2026-08-10", "end": "2026-08-26", "members": ["강상배"]}, "qa": {"start": "2026-08-27", "end": "2026-09-02", "members": ["김채린"]}},
     "deployDate": "2026-06-01",
     "status": "대기",
     "continuous": false,
@@ -3881,53 +3842,8 @@
       "P01",
       "P02"
     ],
-    "assignments": {
-      "plan": [
-        "koo",
-        "seo"
-      ],
-      "design": [],
-      "front": [],
-      "back": [],
-      "qa": []
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-10-05",
-        "end": "2026-10-15",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2026-10-16",
-        "end": "2026-10-23",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-10-26",
-        "end": "2026-11-05",
-        "members": [
-          "송창석"
-        ]
-      },
-      "back": {
-        "start": "2026-12-10",
-        "end": "2026-12-22",
-        "members": [
-          "강상배"
-        ]
-      },
-      "qa": {
-        "start": "2026-12-23",
-        "end": "2026-12-28",
-        "members": [
-          "정지섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo", "seo"], "design": ["kim_hc"], "front": ["jung"], "back": ["choi"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-11-12", "end": "2026-11-19", "members": ["구범모", "서현일"]}, "design": {"start": "2026-11-24", "end": "2026-12-01", "members": ["김현철"]}, "front": {"start": "2026-12-02", "end": "2026-12-14", "members": ["정지섭"]}, "back": {"start": "2027-01-13", "end": "2027-01-25", "members": ["최상수"]}, "qa": {"start": "2027-01-26", "end": "2027-01-28", "members": ["김채린"]}},
     "deployDate": "2026-10-26",
     "status": "대기",
     "continuous": false,
@@ -3948,41 +3864,8 @@
     "complexity": 3,
     "dependency": 4,
     "deps": [],
-    "assignments": {
-      "plan": [
-        "koo",
-        "seo"
-      ],
-      "design": [],
-      "front": [],
-      "back": [],
-      "qa": []
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-05-01",
-        "end": "2026-05-12",
-        "members": [
-          "구범모"
-        ]
-      },
-      "design": {
-        "start": "",
-        "end": ""
-      },
-      "front": {
-        "start": "",
-        "end": ""
-      },
-      "back": {
-        "start": "",
-        "end": ""
-      },
-      "qa": {
-        "start": "",
-        "end": ""
-      }
-    },
+    "assignments": {"plan": ["koo", "seo"], "design": [], "front": [], "back": [], "qa": []},
+    "phases": {"plan": {"start": "2026-06-11", "end": "2026-06-18", "members": ["구범모", "서현일"]}, "design": {"start": "", "end": "", "members": []}, "front": {"start": "", "end": "", "members": []}, "back": {"start": "", "end": "", "members": []}, "qa": {"start": "", "end": "", "members": []}},
     "deployDate": "2026-04-27",
     "status": "대기",
     "continuous": false,
@@ -4003,63 +3886,8 @@
     "complexity": 7,
     "dependency": 6,
     "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "shin",
-        "song"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-06-03",
-        "end": "2026-06-19",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2026-06-22",
-        "end": "2026-07-08",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-09-10",
-        "end": "2026-10-15",
-        "members": [
-          "신진섭",
-          "송창석"
-        ]
-      },
-      "back": {
-        "start": "2026-10-16",
-        "end": "2026-11-20",
-        "members": [
-          "강상배",
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "2026-11-23",
-        "end": "2026-12-03",
-        "members": [
-          "정지섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": ["kim_hc"], "front": ["shin", "song"], "back": ["choi", "kang"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-05-22", "end": "2026-06-10", "members": ["구범모"]}, "design": {"start": "2026-06-11", "end": "2026-06-29", "members": ["김현철"]}, "front": {"start": "2026-07-24", "end": "2026-08-26", "members": ["신진섭", "송창석"]}, "back": {"start": "2026-08-27", "end": "2026-10-01", "members": ["최상수", "강상배"]}, "qa": {"start": "2026-10-02", "end": "2026-10-19", "members": ["김채린"]}},
     "deployDate": "2026-10-05",
     "status": "대기",
     "continuous": false,
@@ -4080,45 +3908,8 @@
     "complexity": 4,
     "dependency": 4,
     "deps": [],
-    "assignments": {
-      "plan": [
-        "seo"
-      ],
-      "design": [],
-      "front": [],
-      "back": [
-        "kang"
-      ],
-      "qa": []
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-05-29",
-        "end": "2026-06-10",
-        "members": [
-          "구범모"
-        ]
-      },
-      "design": {
-        "start": "",
-        "end": ""
-      },
-      "front": {
-        "start": "",
-        "end": ""
-      },
-      "back": {
-        "start": "2026-08-27",
-        "end": "2026-09-08",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "",
-        "end": ""
-      }
-    },
+    "assignments": {"plan": ["seo"], "design": [], "front": [], "back": ["kang"], "qa": []},
+    "phases": {"plan": {"start": "2026-05-13", "end": "2026-05-26", "members": ["서현일"]}, "design": {"start": "", "end": "", "members": []}, "front": {"start": "", "end": "", "members": []}, "back": {"start": "2026-07-09", "end": "2026-07-21", "members": ["강상배"]}, "qa": {"start": "", "end": "", "members": []}},
     "deployDate": "2026-05-18",
     "status": "대기",
     "continuous": false,
@@ -4141,56 +3932,8 @@
     "deps": [
       "P04"
     ],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung",
-        "shin"
-      ],
-      "back": [],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-09-16",
-        "end": "2026-09-25",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2026-09-29",
-        "end": "2026-10-09",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-11-17",
-        "end": "2026-12-03",
-        "members": [
-          "신진섭"
-        ]
-      },
-      "back": {
-        "start": "",
-        "end": ""
-      },
-      "qa": {
-        "start": "2026-12-04",
-        "end": "2026-12-09",
-        "members": [
-          "송창석"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": ["kim_hc"], "front": ["shin"], "back": [], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-09-03", "end": "2026-09-14", "members": ["구범모"]}, "design": {"start": "2026-09-15", "end": "2026-09-22", "members": ["김현철"]}, "front": {"start": "2026-09-23", "end": "2026-10-14", "members": ["신진섭"]}, "back": {"start": "", "end": "", "members": []}, "qa": {"start": "2026-10-27", "end": "2026-10-30", "members": ["김채린"]}},
     "deployDate": "2027-03-22",
     "status": "대기",
     "continuous": false,
@@ -4211,45 +3954,8 @@
     "complexity": 3,
     "dependency": 3,
     "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [],
-      "front": [],
-      "back": [
-        "choi"
-      ],
-      "qa": []
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-05-13",
-        "end": "2026-05-18",
-        "members": [
-          "구범모"
-        ]
-      },
-      "design": {
-        "start": "",
-        "end": ""
-      },
-      "front": {
-        "start": "",
-        "end": ""
-      },
-      "back": {
-        "start": "2026-07-27",
-        "end": "2026-08-06",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "",
-        "end": ""
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": [], "front": [], "back": ["choi"], "qa": []},
+    "phases": {"plan": {"start": "2026-07-20", "end": "2026-07-23", "members": ["구범모"]}, "design": {"start": "", "end": "", "members": []}, "front": {"start": "", "end": "", "members": []}, "back": {"start": "2026-07-24", "end": "2026-08-05", "members": ["최상수"]}, "qa": {"start": "", "end": "", "members": []}},
     "deployDate": "2027-01-18",
     "status": "대기",
     "continuous": false,
@@ -4270,55 +3976,8 @@
     "complexity": 4,
     "dependency": 3,
     "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [],
-      "front": [
-        "jung"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-05-07",
-        "end": "2026-05-12",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "",
-        "end": ""
-      },
-      "front": {
-        "start": "2026-07-09",
-        "end": "2026-07-16",
-        "members": [
-          "신진섭"
-        ]
-      },
-      "back": {
-        "start": "2026-07-17",
-        "end": "2026-07-24",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "2026-07-27",
-        "end": "2026-07-29",
-        "members": [
-          "정지섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": [], "front": ["jung"], "back": ["choi"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-07-14", "end": "2026-07-17", "members": ["구범모"]}, "design": {"start": "", "end": "", "members": []}, "front": {"start": "2026-09-15", "end": "2026-09-22", "members": ["정지섭"]}, "back": {"start": "2026-11-02", "end": "2026-11-09", "members": ["최상수"]}, "qa": {"start": "2026-11-10", "end": "2026-11-12", "members": ["김채린"]}},
     "deployDate": "2027-04-05",
     "status": "대기",
     "continuous": false,
@@ -4339,50 +3998,8 @@
     "complexity": 4,
     "dependency": 3,
     "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [],
-      "qa": []
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-05-01",
-        "end": "2026-05-06",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2026-05-20",
-        "end": "2026-05-25",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-07-09",
-        "end": "2026-07-21",
-        "members": [
-          "송창석"
-        ]
-      },
-      "back": {
-        "start": "",
-        "end": ""
-      },
-      "qa": {
-        "start": "",
-        "end": ""
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": ["kim_hc"], "front": ["jung"], "back": [], "qa": []},
+    "phases": {"plan": {"start": "2026-07-24", "end": "2026-07-27", "members": ["구범모"]}, "design": {"start": "2026-07-28", "end": "2026-07-30", "members": ["김현철"]}, "front": {"start": "2026-09-23", "end": "2026-10-07", "members": ["정지섭"]}, "back": {"start": "", "end": "", "members": []}, "qa": {"start": "", "end": "", "members": []}},
     "deployDate": "2026-06-15",
     "status": "대기",
     "continuous": false,
@@ -4614,61 +4231,8 @@
     "complexity": 5,
     "dependency": 3,
     "deps": [],
-    "assignments": {
-      "plan": [
-        "koo",
-        "seo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-06-22",
-        "end": "2026-07-02",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2026-07-30",
-        "end": "2026-08-11",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-08-12",
-        "end": "2026-08-28",
-        "members": [
-          "송창석"
-        ]
-      },
-      "back": {
-        "start": "2026-08-31",
-        "end": "2026-09-10",
-        "members": [
-          "강상배"
-        ]
-      },
-      "qa": {
-        "start": "2026-11-10",
-        "end": "2026-11-16",
-        "members": [
-          "신진섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo", "seo"], "design": ["kim_hc"], "front": ["jung"], "back": ["choi"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-07-01", "end": "2026-07-13", "members": ["구범모", "서현일"]}, "design": {"start": "2026-07-14", "end": "2026-07-24", "members": ["김현철"]}, "front": {"start": "2026-08-10", "end": "2026-08-26", "members": ["정지섭"]}, "back": {"start": "2026-10-20", "end": "2026-10-30", "members": ["최상수"]}, "qa": {"start": "2026-11-02", "end": "2026-11-06", "members": ["김채린"]}},
     "deployDate": "2027-02-22",
     "status": "대기",
     "continuous": false,
@@ -4689,55 +4253,8 @@
     "complexity": 5,
     "dependency": 6,
     "deps": [],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [],
-      "front": [
-        "shin"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-07-06",
-        "end": "2026-07-15",
-        "members": [
-          "구범모"
-        ]
-      },
-      "design": {
-        "start": "",
-        "end": ""
-      },
-      "front": {
-        "start": "2026-08-18",
-        "end": "2026-08-28",
-        "members": [
-          "정지섭"
-        ]
-      },
-      "back": {
-        "start": "2026-09-22",
-        "end": "2026-10-08",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "2026-11-04",
-        "end": "2026-11-09",
-        "members": [
-          "신진섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": [], "front": ["jung"], "back": ["choi"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-06-19", "end": "2026-06-30", "members": ["구범모"]}, "design": {"start": "", "end": "", "members": []}, "front": {"start": "2026-07-28", "end": "2026-08-07", "members": ["정지섭"]}, "back": {"start": "2026-08-10", "end": "2026-08-25", "members": ["최상수"]}, "qa": {"start": "2026-09-03", "end": "2026-09-08", "members": ["김채린"]}},
     "deployDate": "2027-02-15",
     "status": "대기",
     "continuous": false,
@@ -4759,66 +4276,8 @@
     "dependency": 9,
     "deps": [],
     "hardDeadline": "2026-08-15",
-    "assignments": {
-      "plan": [
-        "seo",
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "shin",
-        "song"
-      ],
-      "back": [
-        "kang"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-04-14",
-        "end": "2026-04-30",
-        "members": [
-          "구범모",
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2026-05-01",
-        "end": "2026-05-19",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-05-20",
-        "end": "2026-07-08",
-        "members": [
-          "정지섭",
-          "신진섭",
-          "송창석"
-        ]
-      },
-      "back": {
-        "start": "2026-05-20",
-        "end": "2026-07-08",
-        "members": [
-          "최상수",
-          "강상배"
-        ]
-      },
-      "qa": {
-        "start": "2026-07-09",
-        "end": "2026-07-23",
-        "members": [
-          "강상배"
-        ]
-      }
-    },
+    "assignments": {"plan": ["seo", "koo"], "design": ["kim_hc"], "front": ["jung", "shin", "song"], "back": ["choi", "kang"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-04-14", "end": "2026-04-30", "members": ["서현일", "구범모"]}, "design": {"start": "2026-05-04", "end": "2026-05-19", "members": ["김현철"]}, "front": {"start": "2026-05-20", "end": "2026-07-08", "members": ["정지섭", "신진섭", "송창석"]}, "back": {"start": "2026-05-20", "end": "2026-07-08", "members": ["최상수", "강상배"]}, "qa": {"start": "2026-07-09", "end": "2026-07-23", "members": ["김채린"]}},
     "deployDate": "2026-08-14",
     "status": "대기",
     "continuous": false,
@@ -4899,61 +4358,8 @@
     "deps": [
       "P10"
     ],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "jung",
-        "shin"
-      ],
-      "back": [
-        "choi"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-12-04",
-        "end": "2026-12-16",
-        "members": [
-          "구범모"
-        ]
-      },
-      "design": {
-        "start": "2027-01-20",
-        "end": "2027-02-01",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2027-02-02",
-        "end": "2027-02-23",
-        "members": [
-          "정지섭"
-        ]
-      },
-      "back": {
-        "start": "2027-02-24",
-        "end": "2027-03-17",
-        "members": [
-          "강상배"
-        ]
-      },
-      "qa": {
-        "start": "2027-03-18",
-        "end": "2027-03-25",
-        "members": [
-          "신진섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": ["kim_hc"], "front": ["jung"], "back": ["choi"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-10-20", "end": "2026-10-30", "members": ["구범모"]}, "design": {"start": "2026-11-02", "end": "2026-11-12", "members": ["김현철"]}, "front": {"start": "2026-11-13", "end": "2026-12-01", "members": ["정지섭"]}, "back": {"start": "2026-12-02", "end": "2026-12-22", "members": ["최상수"]}, "qa": {"start": "2026-12-23", "end": "2026-12-31", "members": ["김채린"]}},
     "deployDate": "2026-12-28",
     "status": "대기",
     "continuous": false,
@@ -4976,61 +4382,8 @@
     "deps": [
       "P10"
     ],
-    "assignments": {
-      "plan": [
-        "koo"
-      ],
-      "design": [
-        "kim_hc"
-      ],
-      "front": [
-        "shin",
-        "song"
-      ],
-      "back": [
-        "kang"
-      ],
-      "qa": [
-        "shin"
-      ]
-    },
-    "phases": {
-      "plan": {
-        "start": "2026-12-04",
-        "end": "2026-12-15",
-        "members": [
-          "서현일"
-        ]
-      },
-      "design": {
-        "start": "2026-12-16",
-        "end": "2026-12-25",
-        "members": [
-          "김현철"
-        ]
-      },
-      "front": {
-        "start": "2026-12-28",
-        "end": "2027-01-13",
-        "members": [
-          "송창석"
-        ]
-      },
-      "back": {
-        "start": "2027-01-14",
-        "end": "2027-02-01",
-        "members": [
-          "최상수"
-        ]
-      },
-      "qa": {
-        "start": "2027-02-02",
-        "end": "2027-02-08",
-        "members": [
-          "신진섭"
-        ]
-      }
-    },
+    "assignments": {"plan": ["koo"], "design": ["kim_hc"], "front": ["shin"], "back": ["choi"], "qa": ["kim_cr"]},
+    "phases": {"plan": {"start": "2026-11-02", "end": "2026-11-11", "members": ["구범모"]}, "design": {"start": "2026-11-13", "end": "2026-11-23", "members": ["김현철"]}, "front": {"start": "2026-11-24", "end": "2026-12-09", "members": ["신진섭"]}, "back": {"start": "2026-12-23", "end": "2027-01-12", "members": ["최상수"]}, "qa": {"start": "2027-01-13", "end": "2027-01-18", "members": ["김채린"]}},
     "deployDate": "2027-01-25",
     "status": "대기",
     "continuous": false,
@@ -6645,17 +5998,34 @@
             phaseChips + '</div>';
         });
 
+        // 접속 상태
+        var presence = _memberPresence[member.id];
+        var isOnline = presence && presence.online;
+        var lastSeenStr = presence && presence.lastSeen ? _formatRelativeTime(presence.lastSeen) : '';
+        var linkedEmail = member.email || '';
+        var presenceHTML = isOnline
+          ? '<span style="font-size:10px;color:#10b981;font-weight:600;display:flex;align-items:center;gap:3px;"><span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;"></span>온라인</span>'
+          : '<span style="font-size:10px;color:#9ca3af;display:flex;align-items:center;gap:3px;"><span style="width:7px;height:7px;border-radius:50%;background:#d1d5db;display:inline-block;"></span>' + (lastSeenStr ? lastSeenStr : '미접속') + '</span>';
+        var emailHTML = linkedEmail
+          ? '<div style="font-size:10px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;" title="' + linkedEmail + '">' + linkedEmail + '</div>'
+          : '<div style="font-size:10px;color:#d1d5db;font-style:italic;">계정 미연결</div>';
+
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-            <div style="width:36px;height:36px;border-radius:50%;background:${member.color};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;">${member.name[0]}</div>
-            <div>
+            <div style="position:relative;flex-shrink:0;">
+              <div style="width:36px;height:36px;border-radius:50%;background:${member.color};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;">${member.name[0]}</div>
+              ${isOnline ? '<div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:#10b981;border:2px solid white;"></div>' : ''}
+            </div>
+            <div style="min-width:0;flex:1;">
               <div style="font-weight:700;font-size:14px;color:#1f2937;">${member.name}</div>
               <div style="font-size:11px;color:#9ca3af;">${member.role}</div>
+              ${emailHTML}
             </div>
-            <div style="margin-left:auto;text-align:right;">
-              <div style="font-size:20px;font-weight:800;color:${loadColor};">${maxConcurrent}</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
+              ${presenceHTML}
+              <div style="font-size:20px;font-weight:800;color:${loadColor};line-height:1;">${maxConcurrent}</div>
               <div style="font-size:9px;color:${loadColor};font-weight:600;">${loadLabel} · ${assigned.length}건</div>
             </div>
           </div>
@@ -6681,16 +6051,24 @@
         const label = ACTION_LABELS[h.action] || h.action;
         const dt = new Date(h.timestamp);
         const timeStr = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+        const userName = h.user || '';
         let detail = '';
         if (h.field) detail += '<span style="color:#6366f1;font-weight:600;">' + h.field + '</span> ';
-        if (h.oldVal !== undefined && h.oldVal !== null) detail += '<span style="color:#ef4444;text-decoration:line-through;">' + String(h.oldVal).substring(0,50) + '</span> → ';
-        if (h.newVal !== undefined && h.newVal !== null) detail += '<span style="color:#10b981;">' + String(h.newVal).substring(0,50) + '</span>';
+        if (h.oldValue !== undefined && h.oldValue !== null && h.oldValue !== '') detail += '<span style="color:#ef4444;text-decoration:line-through;">' + String(h.oldValue).substring(0,50) + '</span> → ';
+        if (h.newValue !== undefined && h.newValue !== null && h.newValue !== '') detail += '<span style="color:#10b981;">' + String(h.newValue).substring(0,50) + '</span>';
+        // 이전 형식 호환 (oldVal/newVal)
+        if (!detail && h.oldVal !== undefined) {
+          if (h.field) detail += '<span style="color:#6366f1;font-weight:600;">' + h.field + '</span> ';
+          if (h.oldVal) detail += '<span style="color:#ef4444;text-decoration:line-through;">' + String(h.oldVal).substring(0,50) + '</span> → ';
+          if (h.newVal) detail += '<span style="color:#10b981;">' + String(h.newVal).substring(0,50) + '</span>';
+        }
         return '<div style="display:flex;gap:12px;padding:12px 16px;background:white;border-radius:8px;border:1px solid #e5e7eb;align-items:flex-start;">' +
           '<div style="font-size:20px;flex-shrink:0;">' + icon + '</div>' +
           '<div style="flex:1;min-width:0;">' +
             '<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">' +
               '<span style="font-weight:600;font-size:13px;">[' + label + ']</span>' +
               '<span style="font-weight:600;font-size:13px;">' + (h.projectId || '') + ' ' + (h.projectName || '') + '</span>' +
+              (userName ? '<span style="font-size:11px;color:#6366f1;background:#eef2ff;padding:1px 6px;border-radius:8px;font-weight:500;">' + userName + '</span>' : '') +
             '</div>' +
             (detail ? '<div style="font-size:12px;color:#6b7280;">' + detail + '</div>' : '') +
           '</div>' +
@@ -7196,7 +6574,7 @@
         var appHeader = document.querySelector('.header');
         var _stickyActive = false;
 
-        if (!toolbar || !namesHeader || !chartHeader || !ganttContainer || !appHeader) return;
+        if (!toolbar || !namesHeader || !chartHeader || !ganttContainer || !appHeader || !toolbarSpacer || !namesSpacer || !chartSpacer) return;
 
         function updateSticky() {
           if (state.currentTab !== 'schedule') {
@@ -7387,6 +6765,9 @@
     window.addNewMember = addNewMember;
     window.removeMember = removeMember;
     window.saveMemberChanges = saveMemberChanges;
+    window._addAllowedEmail = _addAllowedEmail;
+    window._removeAllowedEmail = _removeAllowedEmail;
+    window._revokeSession = _revokeSession;
     window.toggleAdminMode = toggleAdminMode;
     window.renderAll = renderAll;
     window.loginWithGoogle = loginWithGoogle;
